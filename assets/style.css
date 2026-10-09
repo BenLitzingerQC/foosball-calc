@@ -1,27 +1,41 @@
+/* ------------------------------------------------------------------------- *
+ * iOS-flavoured styling: grouped inset lists on a grey canvas, a segmented
+ * control for navigation, system colours and the system font stack.
+ * ------------------------------------------------------------------------- */
+
 :root {
-  --bg: #f7f7f8;
-  --surface: #ffffff;
-  --border: #dcdce0;
-  --text: #1c1c20;
-  --muted: #65656e;
-  --accent: #2f6f4f;
-  --accent-text: #ffffff;
-  --gain: #1c6b45;
-  --loss: #a43232;
-  --radius: 6px;
+  /* iOS system colours, light appearance */
+  --canvas: #f2f2f7;
+  --card: #ffffff;
+  --separator: #c6c6c8;
+  --label: #000000;
+  --label-2: rgba(60, 60, 67, 0.6);
+  --label-3: rgba(60, 60, 67, 0.3);
+  --fill: rgba(118, 118, 128, 0.12);
+  --fill-strong: rgba(118, 118, 128, 0.2);
+  --blue: #007aff;
+  --green: #34c759;
+  --red: #ff3b30;
+  --tint-red: rgba(255, 59, 48, 0.1);
+  --radius-card: 10px;
+  --radius-field: 8px;
+  --row-pad: 1rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #17171a;
-    --surface: #1f1f23;
-    --border: #35353c;
-    --text: #e8e8ea;
-    --muted: #9a9aa4;
-    --accent: #4b9e74;
-    --accent-text: #0e1a13;
-    --gain: #6cc495;
-    --loss: #e08585;
+    --canvas: #000000;
+    --card: #1c1c1e;
+    --separator: #38383a;
+    --label: #ffffff;
+    --label-2: rgba(235, 235, 245, 0.6);
+    --label-3: rgba(235, 235, 245, 0.3);
+    --fill: rgba(118, 118, 128, 0.24);
+    --fill-strong: rgba(118, 118, 128, 0.36);
+    --blue: #0a84ff;
+    --green: #30d158;
+    --red: #ff453a;
+    --tint-red: rgba(255, 69, 58, 0.18);
   }
 }
 
@@ -30,305 +44,525 @@
 }
 
 html {
-  /* Verhindert, dass iOS im Querformat die Schrift aufbläst. */
   -webkit-text-size-adjust: 100%;
+  background: var(--canvas);
 }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  /* 16px ist Pflicht: darunter zoomt iOS Safari beim Fokussieren von Feldern. */
-  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-
-/* -------------------------------------------------- Menü */
-
-.topbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem 1.5rem;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.topbar h1 {
-  margin: 0;
-  font-size: 1.05rem;
-  letter-spacing: 0.01em;
-}
-
-#menu {
-  display: flex;
-  gap: 0.25rem;
-}
-
-#menu button {
-  padding: 0.35rem 0.75rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  background: none;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-
-/* Kurze Menütitel erst ab Handybreite, siehe Media Query unten. */
-#menu .short {
-  display: none;
-}
-
-#menu button:hover {
-  color: var(--text);
-  border-color: var(--border);
-}
-
-#menu button.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
-}
-
-/* -------------------------------------------------- Layout */
-
-main {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 1.5rem;
-}
-
-.lead {
-  margin: 0 0 1.5rem;
-  color: var(--muted);
-  max-width: 62ch;
-}
-
-h2 {
-  font-size: 1rem;
-  margin: 2rem 0 0.75rem;
-}
-
-fieldset {
-  margin: 0 0 1.25rem;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-legend {
-  padding: 0 0.4rem;
-  font-weight: 600;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-
-.hint {
-  margin: 0 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-label.check {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
-  cursor: pointer;
-}
-
-input,
-select {
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-}
-
-input[type="number"] {
-  width: 6.5rem;
-}
-
-input[type="checkbox"] {
-  width: auto;
-  accent-color: var(--accent);
-}
-
-button.primary {
-  padding: 0.5rem 1.1rem;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  background: var(--accent);
-  color: var(--accent-text);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-button.ghost {
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: none;
-  color: var(--muted);
-  font: inherit;
-  cursor: pointer;
-}
-
-button.ghost:hover {
-  color: var(--text);
-}
-
-/* -------------------------------------------------- Teams */
-
-.teams {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.team-editor {
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  /* Ohne das setzt das Namensfeld eine Mindestbreite von ~190px auf die
-     Grid-Spalte durch und die Seite läuft auf schmalen Handys seitlich über. */
-  min-width: 0;
-}
-
-.team-editor h3 {
-  margin: 0 0 0.75rem;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-
-.player-row {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.4rem;
-}
-
-.player-row .p-name {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.player-row .p-elo,
-.player-row .p-games {
-  flex: 0 0 5.5rem;
-  width: 5.5rem;
-}
-
-.column-head {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.3rem;
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-.column-head span:first-child {
-  flex: 1 1 auto;
-}
-
-.column-head span.num {
-  flex: 0 0 5.5rem;
-}
-
-.column-head span.spacer {
-  flex: 0 0 1.9rem;
-}
-
-.score-row {
-  align-items: flex-end;
-}
-
-.score-row .colon {
-  padding-bottom: 0.45rem;
-  font-size: 1.2rem;
-  color: var(--muted);
-}
-
-/* Ergebniszeilen der Serie: kein Label über den Feldern, also mittig ausrichten. */
-#game-list .score-row {
-  align-items: center;
-  gap: 0.5rem;
-}
-
-#game-list .colon {
-  padding-bottom: 0;
-}
-
-.game-label {
-  flex: 0 0 5rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-/* -------------------------------------------------- Ergebnis */
-
-.output {
-  margin-top: 1.5rem;
-}
-
-.output:empty {
-  margin-top: 0;
-}
-
-.panel {
-  padding: 1rem 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  margin-bottom: 1rem;
-}
-
-.panel h3 {
-  margin: 0 0 0.75rem;
-  font-size: 0.85rem
-}
-
-.headline {
-  font-size: 1.6rem;
-  font-weight: 600;
-  margin: 0 0 0.25rem;
+  background: var(--canvas);
+  color: var(--label);
+  /* 17px is the iOS body size and keeps Safari from zooming on input focus. */
+  font: 17px / 1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui,
+    "Segoe UI", "Helvetica Neue", sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
-.headline .sub {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 400;
-  color: var(--muted);
+code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.88em;
 }
 
-/* Breite Tabellen scrollen am Handy seitlich, statt das Layout zu sprengen. */
+/* ----------------------------------------------------------- app header -- */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: calc(0.6rem + env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right)) 0.6rem max(1rem, env(safe-area-inset-left));
+  background: var(--canvas);
+  background: color-mix(in srgb, var(--canvas) 80%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--separator);
+}
+
+.app-header > * {
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.app-header h1 {
+  margin: 0 auto 0.6rem;
+  /* iOS "Large Title" */
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.37px;
+  line-height: 1.2;
+}
+
+/* --------------------------------------------------- segmented control -- */
+
+.segmented {
+  display: flex;
+  gap: 0;
+  padding: 2px;
+  background: var(--fill);
+  border-radius: 9px;
+}
+
+.segmented button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--label);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.08px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.segmented button.active {
+  background: var(--card);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.12),
+    0 3px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* ------------------------------------------------------------- layout --- */
+
+main {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 1.25rem max(1rem, env(safe-area-inset-left))
+    calc(2.5rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-right));
+}
+
+.intro {
+  margin: 0 0 1.5rem;
+  color: var(--label-2);
+  font-size: 15px;
+}
+
+.teams {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+@media (min-width: 40rem) {
+  .teams {
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1rem;
+  }
+}
+
+/* -------------------------------------------------- grouped list cards -- */
+
+.group {
+  /* The name input would otherwise impose a min-content floor on the track. */
+  min-width: 0;
+  margin: 0 0 1.4rem;
+}
+
+.group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 var(--row-pad) 0.4rem;
+}
+
+.group-title,
+.group-head-trailing {
+  margin: 0;
+  color: var(--label-2);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.group > .group-title {
+  padding: 0 var(--row-pad) 0.4rem;
+}
+
+.group-head-trailing {
+  flex: 0 0 auto;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.group-footer {
+  margin: 0.45rem 0 0;
+  padding: 0 var(--row-pad);
+  color: var(--label-2);
+  font-size: 13px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------- rows --- */
+
+.list-row,
+.player-row,
+.score-row,
+.row-add {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.35rem var(--row-pad);
+}
+
+/* iOS hairline separators, inset to the text column. */
+.list-row:not(:last-child)::after,
+.player-row::after,
+.score-row::after {
+  content: "";
+  position: absolute;
+  left: var(--row-pad);
+  right: 0;
+  bottom: 0;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.card > *:last-child::after {
+  display: none;
+}
+
+.row-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.row-detail {
+  flex: 0 1 auto;
+  color: var(--label-2);
+  text-align: right;
+}
+
+.list-row.stacked,
+.list-row.column {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+
+.list-row.stacked .row-label {
+  color: var(--label-2);
+  font-size: 13px;
+}
+
+.list-row.column .row-detail {
+  font-size: 13px;
+  text-align: left;
+}
+
+/* ------------------------------------------------------------- fields --- */
+
+input,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input[type="text"],
+input[type="number"] {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input::placeholder {
+  color: var(--label-3);
+}
+
+/* Numeric entry gets a tinted pill so it reads as editable. */
+/* `input` is part of the selector so these beat the `input[type=number]`
+   reset above, which is otherwise the more specific rule. */
+input.row-value,
+input.p-elo,
+input.p-games,
+.score-row input {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius-field);
+  background: var(--fill-strong);
+  text-align: center;
+}
+
+.row-value {
+  width: 5rem;
+}
+
+.p-elo {
+  width: 4.5rem;
+}
+
+.p-games {
+  width: 3.5rem;
+}
+
+.p-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.score-row input {
+  width: 3.1rem;
+}
+
+.score-row .colon {
+  color: var(--label-3);
+}
+
+.game-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.row-select {
+  display: flex;
+  align-items: center;
+}
+
+.row-select select {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 1.4rem 0 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--label);
+  text-overflow: ellipsis;
+}
+
+.row-select::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-left: -1rem;
+  border-right: 2px solid var(--label-3);
+  border-bottom: 2px solid var(--label-3);
+  border-radius: 1px;
+  transform: rotate(45deg) translate(-2px, -2px);
+  pointer-events: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ------------------------------------------------------------- switch --- */
+
+.switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 51px;
+  height: 31px;
+}
+
+.switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switch .track {
+  position: absolute;
+  inset: 0;
+  border-radius: 15.5px;
+  background: var(--fill-strong);
+  transition: background 0.2s ease;
+  pointer-events: none;
+}
+
+.switch .track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.15),
+    0 1px 1px rgba(0, 0, 0, 0.16);
+  transition: transform 0.2s ease;
+}
+
+.switch input:checked + .track {
+  background: var(--green);
+}
+
+.switch input:checked + .track::after {
+  transform: translateX(20px);
+}
+
+.switch input:focus-visible + .track {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------- add / remove --- */
+
+.row-add {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  text-align: left;
+  cursor: pointer;
+}
+
+.row-add-glyph {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--green);
+  background-image: linear-gradient(#fff, #fff), linear-gradient(#fff, #fff);
+  background-size:
+    11px 2px,
+    2px 11px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.row-remove {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  margin-right: -0.7rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.row-remove::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--label-3);
+  background-image: linear-gradient(var(--card), var(--card));
+  background-size: 11px 2px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ------------------------------------------------------------- button --- */
+
+.btn-filled {
+  display: block;
+  width: 100%;
+  min-height: 50px;
+  margin: 1.75rem 0 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-filled:active {
+  filter: brightness(0.9);
+}
+
+/* ------------------------------------------------------------- output --- */
+
+.output:not(:empty) {
+  margin-top: 2rem;
+}
+
+.card-pad {
+  padding: 1.1rem var(--row-pad);
+}
+
+.headline {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.37px;
+  line-height: 1.1;
+}
+
+.sub {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--label-2);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+.note {
+  margin: 0;
+  padding: 0.85rem var(--row-pad);
+  color: var(--label-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.note code {
+  display: inline-block;
+  padding: 0.15rem 0.35rem;
+  border-radius: 5px;
+  background: var(--fill);
+  color: var(--label);
+}
+
+.note + .note {
+  padding-top: 0;
+}
+
+.error {
+  margin: 0;
+  padding: 0.9rem var(--row-pad);
+  border-radius: var(--radius-card);
+  background: var(--tint-red);
+  color: var(--red);
+  font-size: 15px;
+}
+
+/* -------------------------------------------------------------- table --- */
+
 .table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -340,252 +574,129 @@ table.result {
   font-variant-numeric: tabular-nums;
 }
 
-table.result th,
-table.result td {
-  padding: 0.35rem 0.5rem;
+table.result th {
+  padding: 0.6rem 0.45rem;
+  color: var(--label-2);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
   text-align: right;
-  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+table.result td {
+  padding: 0.6rem 0.45rem;
+  font-size: 15px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 table.result th:first-child,
 table.result td:first-child {
+  padding-left: var(--row-pad);
   text-align: left;
 }
 
+table.result th:last-child,
+table.result td:last-child {
+  padding-right: var(--row-pad);
+}
+
 table.result thead th {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  font-weight: 600;
+  border-bottom: 0.5px solid var(--separator);
 }
 
-table.result tbody tr:last-child td {
-  border-bottom: none;
+table.result tbody tr + tr td {
+  border-top: 0.5px solid var(--separator);
 }
 
-table.result tr.separator td {
-  border-top: 2px solid var(--border);
+table.result tbody tr.separator td {
+  border-top: 0.5px solid var(--label-3);
 }
 
-td.gain,
-span.gain {
-  color: var(--gain);
+.gain {
+  color: var(--green);
 }
 
-td.loss,
-span.loss {
-  color: var(--loss);
+.loss {
+  color: var(--red);
 }
 
-dl.facts {
+/* ---------------------------------------------------------- notation --- */
+
+.notation {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.3rem 1rem;
+  gap: 0.55rem 0.9rem;
   margin: 0;
-  font-size: 0.9rem;
+  padding: 0.9rem var(--row-pad);
+  align-items: baseline;
 }
 
-dl.facts dt {
-  color: var(--muted);
+.notation dt {
+  text-align: right;
+  white-space: nowrap;
 }
 
-dl.facts dd {
+.notation dd {
   margin: 0;
-  font-variant-numeric: tabular-nums;
+  color: var(--label-2);
+  font-size: 15px;
 }
 
-.error {
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--loss);
-  border-radius: var(--radius);
-  color: var(--loss);
-  background: var(--surface);
+/* -------------------------------------------------------------- math --- */
+
+/* MathML is native in Safari and Chrome, so the formulas need no library.
+   The default math font is a serif face, which gives them the LaTeX look. */
+math {
+  font-size: 1.04em;
 }
 
-code {
-  padding: 0.05em 0.3em;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-  font-size: 0.9em;
+.math-block {
+  padding: 1.1rem var(--row-pad);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-ol.formula {
-  padding-left: 1.3rem;
-  max-width: 70ch;
+.math-block > math {
+  width: fit-content;
+  margin: 0 auto;
+  font-size: 1.3rem;
 }
 
-ol.formula li {
-  margin-bottom: 0.6rem;
+.math-block + .note {
+  padding-top: 0;
 }
 
-.note {
-  margin: 0.75rem 0 0;
-  font-size: 0.85rem;
-  color: var(--muted);
-  max-width: 70ch;
-}
+/* ------------------------------------------------- narrow screens --- */
 
-/* -------------------------------------------------- Handy */
-
-@media (max-width: 640px) {
-  .topbar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    gap: 0.6rem;
-    padding: 0.7rem max(0.85rem, env(safe-area-inset-left));
-  }
-
-  .topbar h1 {
-    flex: 1 0 100%;
-  }
-
-  #menu {
-    flex: 1 0 100%;
-    gap: 0.3rem;
-  }
-
-  #menu button {
-    flex: 1 1 auto;
-    min-height: 2.5rem;
-    padding: 0.35rem 0.4rem;
-    border-color: var(--border);
-    font-size: 0.9rem;
-  }
-
-  #menu .long {
-    display: none;
-  }
-
-  #menu .short {
-    display: inline;
-  }
-
-  main {
-    padding: 1rem max(0.85rem, env(safe-area-inset-left))
-      calc(2rem + env(safe-area-inset-bottom));
-  }
-
-  .lead {
-    margin-bottom: 1rem;
-  }
-
-  /* Teams untereinander statt nebeneinander. */
-  .teams {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .team-editor,
-  fieldset,
-  .panel {
-    padding: 0.85rem;
-  }
-
-  .row {
-    gap: 0.6rem 0.75rem;
-    margin-bottom: 1rem;
-  }
-
-  /* Felder dürfen nie breiter werden als ihr Container -- sonst schiebt ein
-     langer Auswahltext die ganze Seite nach rechts. */
-  label,
-  .row > label.wide {
-    max-width: 100%;
-    flex: 1 1 100%;
-  }
-
-  .row > label:not(.wide) {
-    flex: 0 1 auto;
-  }
-
-  select {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  /* Durchgängig daumentaugliche Trefferflächen. */
-  input,
-  select,
-  button.ghost,
-  button.primary {
-    min-height: 2.75rem;
-  }
-
-  button.primary {
-    width: 100%;
-    font-size: 1rem;
-  }
-
-  input[type="checkbox"] {
-    min-height: 0;
-    width: 1.15rem;
-    height: 1.15rem;
-  }
-
-  input[type="number"] {
-    width: 4.75rem;
-  }
-
-  .player-row {
-    gap: 0.35rem;
-  }
-
-  .player-row .p-elo,
-  .player-row .p-games {
-    flex: 0 0 4.75rem;
-    width: 4.75rem;
-  }
-
-  .player-row .remove,
-  #game-list .remove {
-    flex: 0 0 2.5rem;
-    padding: 0.3rem;
-  }
-
-  .column-head span.num {
-    flex: 0 0 4.75rem;
-  }
-
-  .column-head span.spacer {
-    flex: 0 0 2.5rem;
-  }
-
-  #game-list .score-row {
-    gap: 0.35rem;
-  }
-
-  .game-label {
-    flex: 0 0 3.6rem;
-  }
-
-  .headline {
-    font-size: 1.4rem;
-  }
-
-  /* Spalten, die am Handy entfallen, damit die Kernzahlen ohne seitliches
-     Scrollen sichtbar bleiben. */
+/* Below the two-column breakpoint the wide result tables drop their
+   secondary columns instead of scrolling sideways. */
+@media (max-width: 39.99rem) {
   .hide-sm {
     display: none;
   }
 
   table.result th,
   table.result td {
-    padding: 0.4rem 0.45rem;
-    font-size: 0.9rem;
-    white-space: nowrap;
+    padding: 0.55rem 0.35rem;
+    font-size: 14px;
   }
 
-  table.result thead th {
-    font-size: 0.7rem;
+  table.result th:first-child,
+  table.result td:first-child {
+    padding-left: 0.7rem;
   }
 
-  dl.facts {
-    grid-template-columns: 1fr auto;
+  table.result th:last-child,
+  table.result td:last-child {
+    padding-right: 0.7rem;
   }
 
-  dl.facts dd {
-    text-align: right;
+  /* Let headings wrap rather than push the table into sideways scrolling. */
+  table.result th {
+    white-space: normal;
   }
 }

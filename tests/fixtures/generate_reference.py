@@ -1,9 +1,9 @@
-"""Erzeugt reference.json mit dem echten FoosballEloRankingSystem.
+"""Generates reference.json with the real FoosballEloRankingSystem.
 
-Braucht eine Arbeitskopie von Quantco/elo-slackbot und eine Umgebung mit numpy,
-pydantic und sqlalchemy:
+Needs a working copy of Quantco/elo-slackbot and an environment with numpy,
+pydantic and sqlalchemy:
 
-    ELO_SLACKBOT_PATH=/pfad/zu/elo-slackbot \
+    ELO_SLACKBOT_PATH=/path/to/elo-slackbot \
         python tests/fixtures/generate_reference.py > tests/fixtures/reference.json
 """
 
@@ -65,17 +65,17 @@ def run(spec):
 
 
 SPECS = [
-    # 2v2, alle etabliert, klarer Sieg
+    # 2v2, everyone established, clear win
     {
         "players": [("a1", 1000, 20), ("a2", 1200, 30), ("b1", 1100, 12), ("b2", 950, 8)],
         "games": [(["a1", "a2"], ["b1", "b2"], 10, 3)],
     },
-    # 1v1, grosse Elo-Differenz, Favorit verliert
+    # 1v1, large Elo gap, the favourite loses
     {
         "players": [("a1", 1400, 50), ("b1", 900, 40)],
         "games": [(["a1"], ["b1"], 4, 10)],
     },
-    # Serie aus drei Spielen, gleiche Teams -> Reihenfolge wirkt
+    # Series of three games, same teams -> order has an effect
     {
         "players": [("a1", 1050, 15), ("a2", 980, 22), ("b1", 1010, 9), ("b2", 1120, 31)],
         "games": [
@@ -84,17 +84,17 @@ SPECS = [
             (["a1", "a2"], ["b1", "b2"], 10, 0),
         ],
     },
-    # Platzierungsphase: b2 hat erst 2 Spiele -> placement_factor 0.4
+    # Placement period: b2 has only 2 matches -> placement_factor 0.4
     {
         "players": [("a1", 1000, 20), ("a2", 1000, 20), ("b1", 1000, 20), ("b2", 1000, 2)],
         "games": [(["a1", "a2"], ["b1", "b2"], 10, 5)],
     },
-    # Unterschiedliche Teamgrössen 1v2
+    # Unequal team sizes, 1v2
     {
         "players": [("a1", 1300, 40), ("b1", 1000, 10), ("b2", 1050, 11)],
         "games": [(["a1"], ["b1", "b2"], 10, 9)],
     },
-    # Platzierungsphase mit Serie: n_games wächst um 1/Teamgrösse pro Spiel
+    # Placement period with a series: n_games grows by 1/team size per game
     {
         "players": [("a1", 1000, 0), ("a2", 1000, 20), ("b1", 1000, 20), ("b2", 1000, 20)],
         "games": [

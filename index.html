@@ -1,186 +1,489 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Foosball Elo Rechner</title>
-    <meta name="description" content="Elo-Rechner für den Tischkicker-Slackbot." />
+    <title>Elo Calculator</title>
+    <meta name="description" content="Elo calculator for the foosball Slack bot." />
 
-    <!-- Zum Home-Bildschirm hinzufügen -->
+    <!-- Add to Home Screen -->
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Elo" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#f7f7f8" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1f1f23" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/icon-180.png" />
 
     <link rel="stylesheet" href="assets/style.css" />
   </head>
   <body>
-    <header class="topbar">
-      <h1>Foosball Elo Rechner</h1>
-      <nav id="menu">
-        <button type="button" data-view="simulate" class="active">
-          <span class="long">Spiel simulieren</span><span class="short">Simulieren</span>
-        </button>
-        <button type="button" data-view="combine">
-          <span class="long">Spiele zusammenfassen</span><span class="short">Zusammenfassen</span>
-        </button>
-        <button type="button" data-view="formula">
-          <span class="long">Formel</span><span class="short">Formel</span>
-        </button>
+    <header class="app-header">
+      <h1>Elo Calculator</h1>
+      <nav id="menu" class="segmented" aria-label="Views">
+        <button type="button" data-view="simulate" class="active">Simulate</button>
+        <button type="button" data-view="combine">Combine</button>
+        <button type="button" data-view="formula">Formula</button>
       </nav>
     </header>
 
     <main>
-      <!-- ---------------------------------------------------------------- -->
+      <!-- --------------------------------------------------- Simulate ---- -->
       <section id="view-simulate" class="view">
-        <p class="lead">
-          Aktuelle Elo der Spieler und ein Ergebnis eintragen &ndash; heraus kommt, wie
-          viel Elo der Bot jedem gutschreiben würde.
+        <p class="intro">
+          Enter each player's current Elo and a score to see how much Elo the bot
+          would award.
         </p>
 
         <form id="form-simulate">
           <div class="teams">
-            <div class="team-editor" data-team="a"></div>
-            <div class="team-editor" data-team="b"></div>
+            <div class="group team-editor" data-team="a"></div>
+            <div class="group team-editor" data-team="b"></div>
           </div>
 
-          <div class="row score-row">
-            <label>
-              Punkte Team&nbsp;A
-              <input type="number" id="sim-score-a" min="0" step="1" value="10" required />
-            </label>
-            <span class="colon">:</span>
-            <label>
-              Punkte Team&nbsp;B
-              <input type="number" id="sim-score-b" min="0" step="1" value="7" required />
-            </label>
+          <div class="group">
+            <h2 class="group-title">Score</h2>
+            <div class="card">
+              <div class="list-row">
+                <span class="row-label">Team A</span>
+                <input
+                  type="number"
+                  id="sim-score-a"
+                  class="row-value"
+                  min="0"
+                  step="1"
+                  value="10"
+                  required
+                />
+              </div>
+              <div class="list-row">
+                <span class="row-label">Team B</span>
+                <input
+                  type="number"
+                  id="sim-score-b"
+                  class="row-value"
+                  min="0"
+                  step="1"
+                  value="7"
+                  required
+                />
+              </div>
+            </div>
           </div>
 
-          <div class="row">
-            <label class="check">
-              <input type="checkbox" id="sim-placement" />
-              Platzierungsspiele berücksichtigen
-            </label>
+          <div class="group">
+            <div class="card">
+              <div class="list-row">
+                <span class="row-label">Count placement matches</span>
+                <label class="switch">
+                  <input type="checkbox" id="sim-placement" />
+                  <span class="track"></span>
+                </label>
+              </div>
+            </div>
+            <p class="group-footer">
+              A rating counts as provisional for the first five matches. Turn this on
+              to enter how many matches each player has played.
+            </p>
           </div>
 
-          <button type="submit" class="primary">Berechnen</button>
+          <button type="submit" class="btn-filled">Calculate</button>
         </form>
 
         <div id="out-simulate" class="output" aria-live="polite"></div>
       </section>
 
-      <!-- ---------------------------------------------------------------- -->
+      <!-- ---------------------------------------------------- Combine ---- -->
       <section id="view-combine" class="view" hidden>
-        <p class="lead">
-          Mehrere gespielte Spiele, aber nur ein Eintrag im Bot: Hier wird das
-          Einzelergebnis gesucht, dessen Elo-Änderung der Summe aller Spiele am
-          nächsten kommt.
+        <p class="intro">
+          Several games played, but only one entry in the bot. This finds the single
+          score whose Elo change comes closest to all games combined.
         </p>
 
         <form id="form-combine">
           <div class="teams">
-            <div class="team-editor" data-team="a"></div>
-            <div class="team-editor" data-team="b"></div>
+            <div class="group team-editor" data-team="a"></div>
+            <div class="group team-editor" data-team="b"></div>
           </div>
 
-          <fieldset>
-            <legend>Gespielte Spiele</legend>
-            <p class="hint">
-              In dieser Reihenfolge gewertet &ndash; Elo und Spielzähler wandern von
-              Spiel zu Spiel weiter.
-            </p>
-            <div id="game-list"></div>
-            <button type="button" class="ghost" id="add-game">+ Spiel</button>
-          </fieldset>
-
-          <fieldset>
-            <legend>Suchraum</legend>
-            <div class="row">
-              <label>
-                Punkte bis
-                <input type="number" id="cmb-max-points" min="1" step="1" value="10" required />
-              </label>
-              <label class="wide">
-                Ergebnisse
-                <select id="cmb-mode">
-                  <option value="winnerExact" selected>Sieger hat genau diese Punktzahl</option>
-                  <option value="any">Alle Ergebnisse bis zu dieser Punktzahl</option>
-                </select>
-              </label>
-              <label class="check">
-                <input type="checkbox" id="cmb-placement" />
-                Platzierungsspiele berücksichtigen
-              </label>
+          <div class="group">
+            <h2 class="group-title">Games played</h2>
+            <div class="card">
+              <div id="game-list"></div>
+              <button type="button" class="row-add" id="add-game">
+                <span class="row-add-glyph" aria-hidden="true"></span>Add game
+              </button>
             </div>
-          </fieldset>
+            <p class="group-footer">
+              Scored in this order &ndash; ratings and match counts carry over from
+              one game to the next.
+            </p>
+          </div>
 
-          <button type="submit" class="primary">Bestes Einzelergebnis suchen</button>
+          <div class="group">
+            <h2 class="group-title">Search space</h2>
+            <div class="card">
+              <div class="list-row">
+                <span class="row-label">Points up to</span>
+                <input
+                  type="number"
+                  id="cmb-max-points"
+                  class="row-value"
+                  min="1"
+                  step="1"
+                  value="10"
+                  required
+                />
+              </div>
+              <div class="list-row stacked">
+                <label class="row-label" for="cmb-mode">Scores to consider</label>
+                <span class="row-select">
+                  <select id="cmb-mode">
+                    <option value="winnerExact" selected>
+                      Winner has exactly that many points
+                    </option>
+                    <option value="any">Any score up to that many points</option>
+                  </select>
+                </span>
+              </div>
+              <div class="list-row">
+                <span class="row-label">Count placement matches</span>
+                <label class="switch">
+                  <input type="checkbox" id="cmb-placement" />
+                  <span class="track"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-filled">Find best single score</button>
         </form>
 
         <div id="out-combine" class="output" aria-live="polite"></div>
       </section>
 
-      <!-- ---------------------------------------------------------------- -->
+      <!-- ---------------------------------------------------- Formula ---- -->
       <section id="view-formula" class="view" hidden>
-        <p class="lead">
-          Nachbau von <code>FoosballEloRankingSystem</code> aus
-          <code>Quantco/elo-slackbot</code>. Die Zahlen hier stimmen bis auf
-          Gleitkomma-Genauigkeit mit dem Bot überein.
+        <p class="intro">
+          A port of <code>FoosballEloRankingSystem</code> from
+          <code>Quantco/elo-slackbot</code>. The numbers here match the bot to
+          floating-point precision.
         </p>
 
-        <h2>Rechenweg</h2>
-        <ol class="formula">
-          <li>
-            <strong>Team-Wertung.</strong> Logarithmisches Mittel der Einzelwertungen,
-            <code>R = D · log₁₀( mittel( 10^(rᵢ/D) ) )</code> mit <code>D = 500</code>.
-            Ein starker Spieler zieht die Team-Wertung also über den Durchschnitt.
-          </li>
-          <li>
-            <strong>Erwartete Punktquote.</strong>
-            <code>E = 1 / (1 + 10^((R_B − R_A)/D))</code>. 500&nbsp;Elo Differenz
-            heisst &bdquo;zehnmal so stark&ldquo; und damit <code>10/11</code> der Punkte.
-          </li>
-          <li>
-            <strong>Tatsächliche Punktquote.</strong>
-            <code>S = Punkte_A / (Punkte_A + Punkte_B)</code> &ndash; nicht Sieg/Niederlage,
-            sondern das Punktverhältnis. 10:9 verschiebt wenig, 10:0 viel.
-          </li>
-          <li>
-            <strong>Rohe Änderung.</strong>
-            <code>Δ = 10 · (Punkte_A + Punkte_B) · (S − E)</code>. Mehr Gesamtpunkte
-            &rarr; grösserer Hebel.
-          </li>
-          <li>
-            <strong>Aufteilung.</strong> Jeder Spieler bekommt <code>Δ / Teamgrösse</code>,
-            das Verliererteam mit umgekehrtem Vorzeichen, plus <code>+0,5</code>
-            Teilnahme-Bonus für jeden.
-          </li>
-          <li>
-            <strong>Platzierungsphase.</strong> Unter 5&nbsp;Spielen ist eine Wertung
-            unfertig. Ist jemand in dieser Phase, werden die Änderungen aller
-            <em>etablierten</em> Spieler mit <code>min(Spiele/5)</code> gedämpft &ndash;
-            gegen Elo-Farming an Neulingen. Ein 2&#8239;v&#8239;2-Spiel zählt pro Spieler
-            als halbes Spiel.
-          </li>
-        </ol>
+        <div class="group">
+          <h2 class="group-title">Notation</h2>
+          <div class="card">
+            <dl class="notation">
+              <dt><math><msub><mi>r</mi><mi>i</mi></msub></math></dt>
+              <dd>rating of player <math><mi>i</mi></math></dd>
 
-        <h2>Konstanten</h2>
-        <div class="table-wrap">
-          <table class="result" id="constants-table"></table>
+              <dt><math><msub><mi>R</mi><mi>A</mi></msub></math></dt>
+              <dd>reduced rating of team <math><mi>A</mi></math></dd>
+
+              <dt><math><msub><mi>p</mi><mi>A</mi></msub></math></dt>
+              <dd>points scored by team <math><mi>A</mi></math></dd>
+
+              <dt><math><msub><mi>g</mi><mi>i</mi></msub></math></dt>
+              <dd>matches played by player <math><mi>i</mi></math></dd>
+
+              <dt><math><mi>D</mi></math></dt>
+              <dd>rating gap that means &ldquo;ten times as strong&rdquo;, 500</dd>
+
+              <dt><math><mi>k</mi></math></dt>
+              <dd>gain coefficient, 10</dd>
+
+              <dt><math><mi>f</mi></math></dt>
+              <dd>participation bonus, 0.5</dd>
+
+              <dt><math><mi>m</mi></math></dt>
+              <dd>placement matches, 5</dd>
+            </dl>
+          </div>
         </div>
 
-        <h2>Warum die Zusammenfassung nie exakt passt</h2>
-        <p>
-          Der Teilnahme-Bonus fällt pro Eintrag an, nicht pro gespieltem Spiel. Drei
-          Spiele bringen jedem <code>3 × 0,5 = 1,5</code> Elo geschenkt, ein einzelner
-          Eintrag nur <code>0,5</code>. Diese Differenz von <code>(n − 1) · 0,5</code>
-          trifft alle Spieler gleich und lässt sich über das Ergebnis nicht ausgleichen
-          &ndash; sie wird im Ergebnis separat ausgewiesen.
-        </p>
+        <div class="group">
+          <h2 class="group-title">Step 1 &middot; Team rating</h2>
+          <div class="card">
+            <div class="math-block">
+              <math display="block">
+                <mrow>
+                  <msub><mi>R</mi><mi>A</mi></msub>
+                  <mo>=</mo>
+                  <mi>D</mi>
+                  <mspace width="0.17em" />
+                  <msub><mi>log</mi><mn>10</mn></msub>
+                  <mrow>
+                    <mo stretchy="true">(</mo>
+                    <mfrac>
+                      <mn>1</mn>
+                      <mrow><mo stretchy="false">|</mo><mi>A</mi><mo stretchy="false">|</mo></mrow>
+                    </mfrac>
+                    <munder>
+                      <mo movablelimits="false">&#x2211;</mo>
+                      <mrow><mi>i</mi><mo>&#x2208;</mo><mi>A</mi></mrow>
+                    </munder>
+                    <msup>
+                      <mn>10</mn>
+                      <mrow>
+                        <mfrac><msub><mi>r</mi><mi>i</mi></msub><mi>D</mi></mfrac>
+                      </mrow>
+                    </msup>
+                    <mo stretchy="true">)</mo>
+                  </mrow>
+                </mrow>
+              </math>
+            </div>
+            <p class="note">
+              A logarithmic mean, not an arithmetic one. One strong player pulls the
+              team rating above the average, which is why a ringer cannot be hidden
+              behind a weak partner.
+            </p>
+          </div>
+        </div>
+
+        <div class="group">
+          <h2 class="group-title">Step 2 &middot; Expected point share</h2>
+          <div class="card">
+            <div class="math-block">
+              <math display="block">
+                <mrow>
+                  <msub><mi>E</mi><mi>A</mi></msub>
+                  <mo>=</mo>
+                  <mfrac>
+                    <mn>1</mn>
+                    <mrow>
+                      <mn>1</mn>
+                      <mo>+</mo>
+                      <msup>
+                        <mn>10</mn>
+                        <mrow>
+                          <mfrac>
+                            <mrow>
+                              <msub><mi>R</mi><mi>B</mi></msub>
+                              <mo>&#x2212;</mo>
+                              <msub><mi>R</mi><mi>A</mi></msub>
+                            </mrow>
+                            <mi>D</mi>
+                          </mfrac>
+                        </mrow>
+                      </msup>
+                    </mrow>
+                  </mfrac>
+                </mrow>
+              </math>
+            </div>
+            <p class="note">
+              A logistic curve on the rating gap. At
+              <math
+                ><mrow
+                  ><msub><mi>R</mi><mi>A</mi></msub><mo>&#x2212;</mo
+                  ><msub><mi>R</mi><mi>B</mi></msub><mo>=</mo><mi>D</mi></mrow
+                ></math
+              >
+              team A is expected to take
+              <math><mfrac><mn>10</mn><mn>11</mn></mfrac></math>
+              of the points.
+            </p>
+          </div>
+        </div>
+
+        <div class="group">
+          <h2 class="group-title">Step 3 &middot; Actual point share</h2>
+          <div class="card">
+            <div class="math-block">
+              <math display="block">
+                <mrow>
+                  <msub><mi>S</mi><mi>A</mi></msub>
+                  <mo>=</mo>
+                  <mfrac>
+                    <msub><mi>p</mi><mi>A</mi></msub>
+                    <mrow>
+                      <msub><mi>p</mi><mi>A</mi></msub>
+                      <mo>+</mo>
+                      <msub><mi>p</mi><mi>B</mi></msub>
+                    </mrow>
+                  </mfrac>
+                </mrow>
+              </math>
+            </div>
+            <p class="note">
+              The point ratio counts, not the win. 10&#8239;:&#8239;9 barely moves
+              anything, 10&#8239;:&#8239;0 moves a lot.
+            </p>
+          </div>
+        </div>
+
+        <div class="group">
+          <h2 class="group-title">Step 4 &middot; Raw change</h2>
+          <div class="card">
+            <div class="math-block">
+              <math display="block">
+                <mrow>
+                  <mi mathvariant="normal">&#x0394;</mi>
+                  <mo>=</mo>
+                  <mi>k</mi>
+                  <mo>&#x2062;</mo>
+                  <mrow>
+                    <mo stretchy="false">(</mo>
+                    <msub><mi>p</mi><mi>A</mi></msub>
+                    <mo>+</mo>
+                    <msub><mi>p</mi><mi>B</mi></msub>
+                    <mo stretchy="false">)</mo>
+                  </mrow>
+                  <mo>&#x2062;</mo>
+                  <mrow>
+                    <mo stretchy="false">(</mo>
+                    <msub><mi>S</mi><mi>A</mi></msub>
+                    <mo>&#x2212;</mo>
+                    <msub><mi>E</mi><mi>A</mi></msub>
+                    <mo stretchy="false">)</mo>
+                  </mrow>
+                </mrow>
+              </math>
+            </div>
+            <p class="note">
+              Scaled by total points, so a long game carries more weight than a short
+              one.
+            </p>
+          </div>
+        </div>
+
+        <div class="group">
+          <h2 class="group-title">Step 5 &middot; Per player</h2>
+          <div class="card">
+            <div class="math-block">
+              <math display="block">
+                <mrow>
+                  <msub><mi>&#x03B4;</mi><mi>i</mi></msub>
+                  <mo>=</mo>
+                  <mi>f</mi>
+                  <mo>+</mo>
+                  <msub><mi>c</mi><mi>i</mi></msub>
+                  <mo>&#x2062;</mo>
+                  <mfrac>
+                    <mrow>
+                      <msub><mi>&#x03C3;</mi><mi>i</mi></msub>
+                      <mo>&#x2062;</mo>
+                      <mi mathvariant="normal">&#x0394;</mi>
+                    </mrow>
+                    <mrow>
+                      <mo stretchy="false">|</mo>
+                      <msub><mi>T</mi><mi>i</mi></msub>
+                      <mo stretchy="false">|</mo>
+                    </mrow>
+                  </mfrac>
+                </mrow>
+              </math>
+            </div>
+            <p class="note">
+              <math
+                ><mrow
+                  ><msub><mi>&#x03C3;</mi><mi>i</mi></msub><mo>=</mo><mo>+</mo
+                  ><mn>1</mn></mrow
+                ></math
+              >
+              for team A and
+              <math><mrow><mo>&#x2212;</mo><mn>1</mn></mrow></math>
+              for team B;
+              <math
+                ><mrow
+                  ><mo stretchy="false">|</mo><msub><mi>T</mi><mi>i</mi></msub
+                  ><mo stretchy="false">|</mo></mrow
+                ></math
+              >
+              is the size of that player's team. Everyone collects the participation
+              bonus <math><mi>f</mi></math>, win or lose.
+            </p>
+          </div>
+        </div>
+
+        <div class="group">
+          <h2 class="group-title">Step 6 &middot; Placement damping</h2>
+          <div class="card">
+            <div class="math-block">
+              <math display="block">
+                <mrow>
+                  <msub><mi>c</mi><mi>i</mi></msub>
+                  <mo>=</mo>
+                  <mrow>
+                    <mo stretchy="true">{</mo>
+                    <mtable columnalign="left left" columnspacing="1.4em" rowspacing="0.5em">
+                      <mtr>
+                        <mtd><mn>1</mn></mtd>
+                        <mtd>
+                          <mrow>
+                            <mtext>if&#xA0;</mtext>
+                            <msub><mi>g</mi><mi>i</mi></msub>
+                            <mo>&lt;</mo>
+                            <mi>m</mi>
+                          </mrow>
+                        </mtd>
+                      </mtr>
+                      <mtr>
+                        <mtd>
+                          <mrow>
+                            <munder>
+                              <mo movablelimits="false">min</mo>
+                              <mrow>
+                                <msub><mi>g</mi><mi>j</mi></msub>
+                                <mo>&lt;</mo>
+                                <mi>m</mi>
+                              </mrow>
+                            </munder>
+                            <mfrac><msub><mi>g</mi><mi>j</mi></msub><mi>m</mi></mfrac>
+                          </mrow>
+                        </mtd>
+                        <mtd><mtext>otherwise</mtext></mtd>
+                      </mtr>
+                    </mtable>
+                  </mrow>
+                </mrow>
+              </math>
+            </div>
+            <p class="note">
+              Players still inside their placement period take the full change;
+              everyone else is damped by the least established player in the match.
+              That is what stops people from farming Elo off newcomers. A
+              2&#8239;v&#8239;2 game counts as half a match per player, so
+              <math><msub><mi>g</mi><mi>i</mi></msub></math>
+              grows by
+              <math
+                ><mrow
+                  ><mn>1</mn><mo>/</mo><mo stretchy="false">|</mo
+                  ><msub><mi>T</mi><mi>i</mi></msub><mo stretchy="false">|</mo></mrow
+                ></math
+              >.
+            </p>
+          </div>
+        </div>
+
+        <div class="group">
+          <h2 class="group-title">Constants</h2>
+          <div class="card" id="constants-list"></div>
+        </div>
+
+        <div class="group">
+          <h2 class="group-title">Why combining is never exact</h2>
+          <div class="card">
+            <p class="note">
+              The participation bonus is paid per entry, not per game played. Three
+              games hand everyone
+              <math
+                ><mrow><mn>3</mn><mo>&#x2062;</mo><mi>f</mi><mo>=</mo><mn>1.5</mn></mrow></math
+              >
+              Elo for free, a single entry only <math><mi>f</mi></math>. That gap of
+              <math
+                ><mrow
+                  ><mo stretchy="false">(</mo><mi>n</mi><mo>&#x2212;</mo><mn>1</mn
+                  ><mo stretchy="false">)</mo><mo>&#x2062;</mo><mi>f</mi></mrow
+                ></math
+              >
+              hits every player equally and no score can make up for it, so it is
+              reported separately in the result.
+            </p>
+          </div>
+        </div>
       </section>
     </main>
 

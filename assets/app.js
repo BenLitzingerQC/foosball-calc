@@ -7,7 +7,7 @@ import {
 
 const cfg = DEFAULT_CONFIG;
 
-// ------------------------------------------------------------------ Helfer
+// ----------------------------------------------------------------- helpers
 
 const esc = (s) =>
   String(s).replace(
@@ -16,9 +16,9 @@ const esc = (s) =>
   );
 
 const fmt = (n, digits = 2) =>
-  n.toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-/** Vorzeichenbehaftete Elo-Änderung, z.B. "+11,75". */
+/** Signed Elo change, e.g. "+11.75". */
 const fmtDelta = (n, digits = 2) => (n >= 0 ? "+" : "−") + fmt(Math.abs(n), digits);
 
 const signClass = (n) => (Math.abs(n) < 0.005 ? "" : n > 0 ? "gain" : "loss");
@@ -26,9 +26,16 @@ const signClass = (n) => (Math.abs(n) < 0.005 ? "" : n > 0 ? "gain" : "loss");
 const deltaCell = (n, digits = 2) =>
   `<td class="${signClass(n)}">${fmtDelta(n, digits)}</td>`;
 
-const pct = (n) => fmt(n * 100, 1) + " %";
+const pct = (n) => fmt(n * 100, 1) + "%";
 
-// ------------------------------------------------------------------ Menü
+/** A grouped-list row with a label on the left and a value on the right. */
+const factRow = (label, value) => `
+  <div class="list-row">
+    <span class="row-label">${label}</span>
+    <span class="row-detail">${value}</span>
+  </div>`;
+
+// -------------------------------------------------------------------- menu
 
 const menu = document.getElementById("menu");
 const views = new Map(
@@ -51,25 +58,26 @@ menu.addEventListener("click", (event) => {
 
 window.addEventListener("hashchange", () => showView(location.hash.slice(1)));
 
-// ------------------------------------------------------------------ Team-Editor
+// ------------------------------------------------------------ team editor
 
 /**
- * Editierbare Spielerliste für ein Team.
+ * Editable player list for one team.
  *
- * Gibt `{ read, setPlacementVisible }` zurück. `read()` liefert
- * `[{ name, rating, nGames }]` und wirft bei unbrauchbaren Eingaben.
+ * Returns `{ read, setPlacementVisible }`. `read()` yields
+ * `[{ name, rating, nGames }]` and throws on unusable input.
  */
-function createTeamEditor(root, { title, players }) {
+function createTeamEditor(root, { title, short, players }) {
   root.innerHTML = `
-    <h3>${esc(title)}</h3>
-    <div class="column-head">
-      <span>Spieler</span>
-      <span class="num">Elo</span>
-      <span class="num games-col">Spiele</span>
-      <span class="spacer"></span>
+    <div class="group-head">
+      <h3 class="group-title">${esc(title)}</h3>
+      <span class="group-head-trailing">Elo<span class="games-col"> &middot; Matches</span></span>
     </div>
-    <div class="players"></div>
-    <button type="button" class="ghost add">+ Spieler</button>
+    <div class="card">
+      <div class="players"></div>
+      <button type="button" class="row-add">
+        <span class="row-add-glyph" aria-hidden="true"></span>Add player
+      </button>
+    </div>
   `;
 
   const list = root.querySelector(".players");
@@ -79,18 +87,22 @@ function createTeamEditor(root, { title, players }) {
     row.className = "player-row";
     row.innerHTML = `
       <input class="p-name" type="text" placeholder="Name" value="${esc(name)}" />
-      <input class="p-elo" type="number" step="0.001" value="${rating}" required />
-      <input class="p-games" type="number" step="0.5" min="0" value="${nGames}" required />
-      <button type="button" class="ghost remove" title="Spieler entfernen">&times;</button>
+      <input class="p-elo" type="number" step="0.001" value="${rating}" required
+             aria-label="Elo rating" />
+      <input class="p-games" type="number" step="0.5" min="0" value="${nGames}" required
+             aria-label="Matches played" />
+      <button type="button" class="row-remove" aria-label="Remove player"></button>
     `;
-    row.querySelector(".remove").addEventListener("click", () => {
+    row.querySelector(".row-remove").addEventListener("click", () => {
       if (list.children.length > 1) row.remove();
     });
     list.append(row);
     return row;
   };
 
-  root.querySelector(".add").addEventListener("click", () => addRow().querySelector(".p-name").focus());
+  root
+    .querySelector(".row-add")
+    .addEventListener("click", () => addRow().querySelector(".p-name").focus());
   for (const player of players) addRow(player);
 
   let placementVisible = false;
@@ -101,16 +113,16 @@ function createTeamEditor(root, { title, players }) {
         const rating = row.querySelector(".p-elo").valueAsNumber;
         const nGames = row.querySelector(".p-games").valueAsNumber;
         if (!Number.isFinite(rating)) {
-          throw new Error(`${title}: Spieler ${index + 1} hat keine gültige Elo.`);
+          throw new Error(`${title}: player ${index + 1} has no valid Elo rating.`);
         }
         if (placementVisible && (!Number.isFinite(nGames) || nGames < 0)) {
-          throw new Error(`${title}: Spieler ${index + 1} hat keine gültige Spielzahl.`);
+          throw new Error(`${title}: player ${index + 1} has no valid match count.`);
         }
         return {
-          name: row.querySelector(".p-name").value.trim() || `Spieler ${index + 1}`,
+          name: row.querySelector(".p-name").value.trim() || `${short}${index + 1}`,
           rating,
-          // Ohne Platzierungsmodus gelten alle als etabliert; nur die Schwelle
-          // `nGames >= placementMatches` ist für die Rechnung relevant.
+          // Without placement mode everyone counts as established; only the
+          // `nGames >= placementMatches` threshold matters to the maths.
           nGames: placementVisible ? nGames : cfg.placementMatches,
         };
       });
@@ -130,28 +142,32 @@ function createTeamEditor(root, { title, players }) {
   return api;
 }
 
-/** Verdrahtet eine Checkbox mit den Spalten "Spiele" beider Team-Editoren. */
+/** Wires a switch to the "Matches" column of both team editors. */
 function bindPlacementToggle(checkbox, editors) {
   const sync = () => editors.forEach((e) => e.setPlacementVisible(checkbox.checked));
   checkbox.addEventListener("change", sync);
   sync();
 }
 
-// ------------------------------------------------------------------ Ansicht: Spiel simulieren
-
-const simulateEditors = (() => {
-  const [rootA, rootB] = document.querySelectorAll("#view-simulate .team-editor");
+const defaultTeams = (selector) => {
+  const [rootA, rootB] = document.querySelectorAll(selector);
   return [
     createTeamEditor(rootA, {
       title: "Team A",
+      short: "A",
       players: [{ name: "", rating: 1000 }, { name: "", rating: 1000 }],
     }),
     createTeamEditor(rootB, {
       title: "Team B",
+      short: "B",
       players: [{ name: "", rating: 1000 }, { name: "", rating: 1000 }],
     }),
   ];
-})();
+};
+
+// ------------------------------------------------------- view: simulate
+
+const simulateEditors = defaultTeams("#view-simulate .team-editor");
 
 bindPlacementToggle(document.getElementById("sim-placement"), simulateEditors);
 
@@ -165,7 +181,7 @@ document.getElementById("form-simulate").addEventListener("submit", (event) => {
     const scoreA = document.getElementById("sim-score-a").valueAsNumber;
     const scoreB = document.getElementById("sim-score-b").valueAsNumber;
     if (!Number.isFinite(scoreA) || !Number.isFinite(scoreB)) {
-      throw new Error("Bitte beide Punktzahlen eintragen.");
+      throw new Error("Please enter both scores.");
     }
     renderSimulate(matchDeltas(teamA, teamB, scoreA, scoreB, cfg), teamA, teamB, scoreA, scoreB);
   } catch (error) {
@@ -179,7 +195,7 @@ function playerRows(team, deltas, separator = false) {
       (p, i) => `
       <tr${separator && i === 0 ? ' class="separator"' : ""}>
         <td>${esc(p.name)}</td>
-        <td>${fmt(p.rating, 1)}</td>
+        <td class="hide-sm">${fmt(p.rating, 1)}</td>
         ${deltaCell(deltas[i])}
         <td>${fmt(p.rating + deltas[i], 1)}</td>
       </tr>`,
@@ -189,59 +205,62 @@ function playerRows(team, deltas, separator = false) {
 
 function renderSimulate(result, teamA, teamB, scoreA, scoreB) {
   const winner =
-    scoreA === scoreB ? "Unentschieden" : scoreA > scoreB ? "Team A gewinnt" : "Team B gewinnt";
+    scoreA === scoreB ? "Draw" : scoreA > scoreB ? "Team A wins" : "Team B wins";
 
   outSimulate.innerHTML = `
-    <div class="panel">
-      <p class="headline">
-        ${scoreA} : ${scoreB}
-        <span class="sub">${winner}</span>
-      </p>
-      <div class="table-wrap">
-        <table class="result">
-          <thead>
-            <tr><th>Spieler</th><th>Elo vorher</th><th>Änderung</th><th>Elo nachher</th></tr>
-          </thead>
-          <tbody>
-            ${playerRows(teamA, result.deltasA)}
-            ${playerRows(teamB, result.deltasB, true)}
-          </tbody>
-        </table>
+    <div class="group">
+      <div class="card card-pad">
+        <p class="headline">
+          ${scoreA} : ${scoreB}
+          <span class="sub">${winner}</span>
+        </p>
       </div>
     </div>
 
-    <div class="panel">
-      <h3>Zwischenwerte</h3>
-      <dl class="facts">
-        <dt>Team-Wertung A</dt><dd>${fmt(result.teamRatingA, 1)}</dd>
-        <dt>Team-Wertung B</dt><dd>${fmt(result.teamRatingB, 1)}</dd>
-        <dt>Erwartete Punktquote A</dt><dd>${pct(result.expected)}</dd>
-        <dt>Tatsächliche Punktquote A</dt><dd>${pct(result.actual)}</dd>
-        <dt>Rohe Änderung</dt><dd>${fmtDelta(result.rawDelta)} Elo auf das Team A</dd>
-        <dt>Teilnahme-Bonus</dt><dd>${fmtDelta(cfg.freeRatingGain)} Elo für jeden</dd>
-        <dt>Platzierungsfaktor</dt><dd>${fmt(result.placementFactor, 2)}${
-          result.placementFactor < 1 ? " (gedämpft, Neuling im Spiel)" : ""
-        }</dd>
-      </dl>
+    <div class="group">
+      <h2 class="group-title">Elo change</h2>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="result">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th class="hide-sm">Before</th>
+                <th>Change</th>
+                <th>After</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${playerRows(teamA, result.deltasA)}
+              ${playerRows(teamB, result.deltasB, true)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2 class="group-title">Intermediate values</h2>
+      <div class="card">
+        ${factRow("Team rating A", fmt(result.teamRatingA, 1))}
+        ${factRow("Team rating B", fmt(result.teamRatingB, 1))}
+        ${factRow("Expected point share A", pct(result.expected))}
+        ${factRow("Actual point share A", pct(result.actual))}
+        ${factRow("Raw change", `${fmtDelta(result.rawDelta)} to team A`)}
+        ${factRow("Participation bonus", `${fmtDelta(cfg.freeRatingGain)} for everyone`)}
+        ${factRow(
+          "Placement factor",
+          fmt(result.placementFactor, 2) +
+            (result.placementFactor < 1 ? " (damped, newcomer in the match)" : ""),
+        )}
+      </div>
     </div>
   `;
 }
 
-// ------------------------------------------------------------------ Ansicht: Spiele zusammenfassen
+// -------------------------------------------------------- view: combine
 
-const combineEditors = (() => {
-  const [rootA, rootB] = document.querySelectorAll("#view-combine .team-editor");
-  return [
-    createTeamEditor(rootA, {
-      title: "Team A",
-      players: [{ name: "", rating: 1000 }, { name: "", rating: 1000 }],
-    }),
-    createTeamEditor(rootB, {
-      title: "Team B",
-      players: [{ name: "", rating: 1000 }, { name: "", rating: 1000 }],
-    }),
-  ];
-})();
+const combineEditors = defaultTeams("#view-combine .team-editor");
 
 bindPlacementToggle(document.getElementById("cmb-placement"), combineEditors);
 
@@ -249,16 +268,17 @@ const gameList = document.getElementById("game-list");
 
 function addGameRow(scoreA = 10, scoreB = 0) {
   const row = document.createElement("div");
-  row.className = "row score-row";
-  row.style.marginBottom = "0.5rem";
+  row.className = "score-row";
   row.innerHTML = `
-    <span class="game-label">Spiel</span>
-    <input class="g-a" type="number" min="0" step="1" value="${scoreA}" required />
+    <span class="game-label">Game</span>
+    <input class="g-a" type="number" min="0" step="1" value="${scoreA}" required
+           aria-label="Points team A" />
     <span class="colon">:</span>
-    <input class="g-b" type="number" min="0" step="1" value="${scoreB}" required />
-    <button type="button" class="ghost remove" title="Spiel entfernen">&times;</button>
+    <input class="g-b" type="number" min="0" step="1" value="${scoreB}" required
+           aria-label="Points team B" />
+    <button type="button" class="row-remove" aria-label="Remove game"></button>
   `;
-  row.querySelector(".remove").addEventListener("click", () => {
+  row.querySelector(".row-remove").addEventListener("click", () => {
     if (gameList.children.length > 1) {
       row.remove();
       renumberGames();
@@ -271,7 +291,7 @@ function addGameRow(scoreA = 10, scoreB = 0) {
 
 function renumberGames() {
   [...gameList.children].forEach((row, i) => {
-    row.querySelector(".game-label").textContent = `Spiel ${i + 1}`;
+    row.querySelector(".game-label").textContent = `Game ${i + 1}`;
   });
 }
 
@@ -293,17 +313,17 @@ document.getElementById("form-combine").addEventListener("submit", (event) => {
       const scoreA = row.querySelector(".g-a").valueAsNumber;
       const scoreB = row.querySelector(".g-b").valueAsNumber;
       if (!Number.isFinite(scoreA) || !Number.isFinite(scoreB)) {
-        throw new Error(`Spiel ${i + 1}: Bitte beide Punktzahlen eintragen.`);
+        throw new Error(`Game ${i + 1}: please enter both scores.`);
       }
       if (scoreA + scoreB === 0) {
-        throw new Error(`Spiel ${i + 1}: 0 : 0 ist kein Ergebnis.`);
+        throw new Error(`Game ${i + 1}: 0 : 0 is not a result.`);
       }
       return { scoreA, scoreB };
     });
 
     const maxPoints = document.getElementById("cmb-max-points").valueAsNumber;
     if (!Number.isFinite(maxPoints) || maxPoints < 1) {
-      throw new Error("Die maximale Punktzahl muss mindestens 1 sein.");
+      throw new Error("The maximum score has to be at least 1.");
     }
     const mode = document.getElementById("cmb-mode").value;
 
@@ -354,103 +374,114 @@ function renderCombine({ teamA, teamB, games, series, candidates }) {
     .join("");
 
   outCombine.innerHTML = `
-    <div class="panel">
-      <p class="headline">
-        ${best.scoreA} : ${best.scoreB}
-        <span class="sub">
-          bestes Einzelergebnis für ${games.length} ${games.length === 1 ? "Spiel" : "Spiele"}
-          &middot; mittlere Abweichung ${fmt(best.rmse)} Elo
-        </span>
-      </p>
-      <p class="note">
-        Im Bot eintragen als
-        <code>!g ${esc(teamA.map((p) => "@" + p.name).join(" "))} ${best.scoreA} - ${
-          best.scoreB
-        } ${esc(teamB.map((p) => "@" + p.name).join(" "))}</code>
-        &ndash; der Bot erwartet echte Slack-Mentions, die Namen hier sind nur Platzhalter.
-      </p>
-    </div>
-
-    <div class="panel">
-      <h3>Abgleich pro Spieler</h3>
-      <div class="table-wrap">
-        <table class="result">
-          <thead>
-            <tr>
-              <th>Spieler</th>
-              <th class="hide-sm">Elo vorher</th>
-              <th>Ziel<span class="hide-sm"> (${games.length} Spiele)</span></th>
-              <th>Einzelspiel</th>
-              <th>Differenz</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${comparisonRows(teamA, series.cumulativeA, best.deltasA, false)}
-            ${comparisonRows(teamB, series.cumulativeB, best.deltasB, true)}
-          </tbody>
-        </table>
+    <div class="group">
+      <div class="card">
+        <div class="card-pad">
+          <p class="headline">
+            ${best.scoreA} : ${best.scoreB}
+            <span class="sub">
+              best single score for ${games.length}
+              ${games.length === 1 ? "game" : "games"}
+              &middot; average deviation ${fmt(best.rmse)} Elo
+            </span>
+          </p>
+        </div>
+        <p class="note">
+          Enter it in the bot as
+          <code>!g ${esc(teamA.map((p) => "@" + p.name).join(" "))} ${best.scoreA} - ${
+            best.scoreB
+          } ${esc(teamB.map((p) => "@" + p.name).join(" "))}</code>
+          &ndash; the bot expects real Slack mentions, the names here are only
+          placeholders.
+        </p>
       </div>
-      ${
-        games.length > 1
-          ? `<p class="note">
-              Von der Differenz sind <strong>${fmt(bonusGap)} Elo</strong> pro Spieler
-              unvermeidbar: der Teilnahme-Bonus fällt ${games.length}× an, wenn man
-              ${games.length} Spiele einträgt, aber nur 1× bei einem Eintrag. Dieser
-              Betrag trifft beide Teams gleich und lässt sich über kein Ergebnis
-              ausgleichen.
-            </p>`
-          : ""
-      }
     </div>
 
-    <div class="panel">
-      <h3>Einzelne Spiele</h3>
-      <div class="table-wrap">
-        <table class="result">
-          <thead>
-            <tr>
-              <th>Spiel</th>
-              <th>Ergebnis</th>
-              <th>Rohe Änderung auf Team A</th>
-              <th class="hide-sm">Erwartete Quote A</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${series.perGame
-              .map(
-                (step, i) => `
+    <div class="group">
+      <h2 class="group-title">Per player</h2>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="result">
+            <thead>
               <tr>
-                <td>Spiel ${i + 1}</td>
-                <td>${games[i].scoreA} : ${games[i].scoreB}</td>
-                ${deltaCell(step.rawDelta)}
-                <td class="hide-sm">${pct(step.expected)}</td>
-              </tr>`,
-              )
-              .join("")}
-          </tbody>
-        </table>
+                <th>Player</th>
+                <th class="hide-sm">Before</th>
+                <th>Target</th>
+                <th>Single game</th>
+                <th>Diff</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${comparisonRows(teamA, series.cumulativeA, best.deltasA, false)}
+              ${comparisonRows(teamB, series.cumulativeB, best.deltasB, true)}
+            </tbody>
+          </table>
+        </div>
+        ${
+          games.length > 1
+            ? `<p class="note">
+                <strong>${fmt(bonusGap)} Elo</strong> per player of that difference is
+                unavoidable: the participation bonus is paid ${games.length} times when
+                you enter ${games.length} games, but only once for a single entry. It
+                hits both teams equally and no score can compensate for it.
+              </p>`
+            : ""
+        }
       </div>
-      <p class="note">
-        Die Reihenfolge wirkt sich aus: nach jedem Spiel sind die Wertungen anders,
-        also auch die Erwartung für das nächste.
-      </p>
+    </div>
+
+    <div class="group">
+      <h2 class="group-title">Individual games</h2>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="result">
+            <thead>
+              <tr>
+                <th>Game</th>
+                <th>Score</th>
+                <th>Raw change to team A</th>
+                <th class="hide-sm">Expected share A</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${series.perGame
+                .map(
+                  (step, i) => `
+                <tr>
+                  <td>Game ${i + 1}</td>
+                  <td>${games[i].scoreA} : ${games[i].scoreB}</td>
+                  ${deltaCell(step.rawDelta)}
+                  <td class="hide-sm">${pct(step.expected)}</td>
+                </tr>`,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+        <p class="note">
+          Order matters: after every game the ratings differ, and so does the
+          expectation for the next one.
+        </p>
+      </div>
     </div>
 
     ${
       alternatives
-        ? `<div class="panel">
-            <h3>Nächstbeste Ergebnisse</h3>
-            <div class="table-wrap">
-              <table class="result">
-                <thead>
-                  <tr>
-                    <th>Ergebnis</th>
-                    <th>Mittlere Abweichung</th>
-                    <th class="hide-sm">Grösste Abweichung</th>
-                  </tr>
-                </thead>
-                <tbody>${alternatives}</tbody>
-              </table>
+        ? `<div class="group">
+            <h2 class="group-title">Runners-up</h2>
+            <div class="card">
+              <div class="table-wrap">
+                <table class="result">
+                  <thead>
+                    <tr>
+                      <th>Score</th>
+                      <th>Average deviation</th>
+                      <th class="hide-sm">Largest deviation</th>
+                    </tr>
+                  </thead>
+                  <tbody>${alternatives}</tbody>
+                </table>
+              </div>
             </div>
           </div>`
         : ""
@@ -458,37 +489,37 @@ function renderCombine({ teamA, teamB, games, series, candidates }) {
   `;
 }
 
-// ------------------------------------------------------------------ Ansicht: Formel
+// -------------------------------------------------------- view: formula
 
-document.getElementById("constants-table").innerHTML = `
-  <thead><tr><th>Konstante</th><th>Wert</th><th>Bedeutung</th></tr></thead>
-  <tbody>
-    <tr><td><code>FREE_ELO_GAIN</code></td><td>${fmt(cfg.freeRatingGain, 1)}</td>
-        <td>Bonus pro Eintrag, für jeden Beteiligten</td></tr>
-    <tr><td><code>ELO_GAIN_COEF</code></td><td>${cfg.ratingGainCoef}</td>
-        <td>globaler Multiplikator der Änderung</td></tr>
-    <tr><td><code>INITIAL_ELO</code></td><td>${cfg.initialRating}</td>
-        <td>Startwertung neuer Spieler</td></tr>
-    <tr><td><code>PLACEMENT_MATCHES</code></td><td>${cfg.placementMatches}</td>
-        <td>Spiele bis die Wertung als stabil gilt</td></tr>
-    <tr><td><code>EXPONENT_ELO_DIFF</code></td><td>${cfg.exponentEloDiff}</td>
-        <td>Elo-Differenz für &bdquo;zehnmal so stark&ldquo;</td></tr>
-  </tbody>
-`;
+document.getElementById("constants-list").innerHTML = [
+  ["FREE_ELO_GAIN", fmt(cfg.freeRatingGain, 1), "bonus per entry, for everyone involved"],
+  ["ELO_GAIN_COEF", cfg.ratingGainCoef, "global multiplier of the change"],
+  ["INITIAL_ELO", cfg.initialRating, "starting rating of a new player"],
+  ["PLACEMENT_MATCHES", cfg.placementMatches, "matches until a rating counts as stable"],
+  ["EXPONENT_ELO_DIFF", cfg.exponentEloDiff, "rating gap for &ldquo;ten times as strong&rdquo;"],
+]
+  .map(
+    ([name, value, meaning]) => `
+    <div class="list-row column">
+      <span class="row-label"><code>${name}</code> = ${value}</span>
+      <span class="row-detail">${meaning}</span>
+    </div>`,
+  )
+  .join("");
 
-// ------------------------------------------------------------------ Start
+// ------------------------------------------------------------------ start
 
 showView(location.hash.slice(1) || "simulate");
 
-// Offline-Betrieb und Home-Bildschirm-Start. Nur über https bzw. localhost
-// erlaubt -- als gebündelte Einzeldatei über file:// greift der Zweig nicht.
+// Offline use and Home Screen launch. Only allowed over https or localhost --
+// as a bundled single file over file:// this branch never runs.
 if (
   "serviceWorker" in navigator &&
   (location.protocol === "https:" || location.hostname === "localhost")
 ) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(() => {
-      /* Offline-Betrieb ist eine Zugabe, kein Muss. */
+      /* Offline support is a bonus, not a requirement. */
     });
   });
 }

@@ -1,113 +1,124 @@
-# Foosball Elo Rechner
+# Elo Calculator
 
 **→ [benlitzingerqc.github.io/foosball-calc](https://benlitzingerqc.github.io/foosball-calc/)**
 
-Statische Seite zum Nachrechnen der Elo-Wertung des Tischkicker-Slackbots
-([`Quantco/elo-slackbot`](https://github.com/Quantco/elo-slackbot)), gesteuert über
-ein Menü mit drei Ansichten:
+Static page for recomputing the Elo ratings of the foosball Slack bot
+([`Quantco/elo-slackbot`](https://github.com/Quantco/elo-slackbot)), driven by a
+menu with three views:
 
-| Ansicht | Zweck |
+| View | Purpose |
 | --- | --- |
-| **Spiel simulieren** | Aktuelle Elo der Spieler und ein Ergebnis eintragen, Elo-Änderung pro Spieler ablesen. Beliebige Teamgrössen (1 v 1, 2 v 2, 1 v 2 …). |
-| **Spiele zusammenfassen** | Mehrere gespielte Spiele eingeben und das Einzelergebnis suchen, dessen Elo-Änderung der Summe aller Spiele am nächsten kommt. |
-| **Formel** | Rechenweg und Konstanten des Bots. |
+| **Simulate** | Enter the players' current Elo and a score, read off the Elo change per player. Any team sizes (1 v 1, 2 v 2, 1 v 2 …). |
+| **Combine** | Enter several games played and search for the single score whose Elo change comes closest to all of them together. |
+| **Formula** | The bot's maths and constants, typeset with MathML. |
 
-## Starten
+## Running it
 
 ```bash
 pixi run serve     # http://localhost:8000
-pixi run test      # Tests der Elo-Logik
-pixi run build     # dist/foosball-calc.html, alles in einer Datei
+pixi run test      # tests for the Elo logic
+pixi run build     # dist/foosball-calc.html, everything in one file
 ```
 
-Lokal braucht die Seite einen Server: `assets/elo.js` wird als ES-Modul geladen, und
-Browser blocken Modul-Imports über `file://`.
+Locally the page needs a server: `assets/elo.js` is loaded as an ES module, and
+browsers block module imports over `file://`.
 
-## Am Handy
+## Design
 
-Die Seite ist für Handybreite gebaut (ein Layout ab 320 px, daumentaugliche
-Trefferflächen, 16 px Schrift in Eingabefeldern, damit iOS beim Fokussieren nicht
-zoomt). Auf schmalen Bildschirmen entfallen nachrangige Tabellenspalten.
+The interface follows the iOS idiom: inset grouped lists on a grey canvas, a
+segmented control for navigation, system colours, switches instead of
+checkboxes, and the system font stack. Light and dark appearance both come from
+`prefers-color-scheme`.
 
-Gehostet lässt sich die Seite über „Zum Home-Bildschirm hinzufügen" wie eine App
-starten: `manifest.webmanifest` liefert Name und Icon, `sw.js` macht sie nach dem
-ersten Besuch offline nutzbar (stale-while-revalidate &ndash; es erscheint immer
-sofort der gecachte Stand, die neue Version wird im Hintergrund geholt und beim
-nächsten Start aktiv). Beim Ändern von Dateien die Konstante `CACHE` in `sw.js`
-hochzählen.
+The formulas are plain [MathML](https://www.w3.org/TR/mathml-core/), rendered by
+the browser's own math layout engine in the default math serif face — the LaTeX
+look without shipping a megabyte of KaTeX fonts, and it works offline.
 
-Ohne Hosting hilft `pixi run build`: `dist/foosball-calc.html` enthält HTML, CSS,
-JavaScript und Icon in einer Datei (~40 kB, keine externen Verweise) und lässt sich
-per AirDrop oder Cloud-Ordner weitergeben und direkt öffnen. Service Worker und
-Manifest greifen dort nicht &ndash; die Datei ist ohnehin schon vollständig lokal.
+## On a phone
 
-## Aufbau
+The page is built for phone width (one layout from 320 px up, thumb-sized hit
+areas, 17 px text in input fields so iOS does not zoom on focus). On narrow
+screens the secondary table columns are dropped.
+
+Hosted, the page can be launched like an app via "Add to Home Screen":
+`manifest.webmanifest` supplies name and icon, `sw.js` makes it usable offline
+after the first visit (stale-while-revalidate &ndash; the cached state always
+appears immediately, the new version is fetched in the background and becomes
+active on the next launch). Bump the `CACHE` constant in `sw.js` whenever files
+change.
+
+Without hosting there is `pixi run build`: `dist/foosball-calc.html` contains
+HTML, CSS, JavaScript and the icon in a single file (~50 kB, no external
+references) and can be passed around via AirDrop or a cloud folder and opened
+directly. Service worker and manifest do not apply there &ndash; the file is
+fully local anyway.
+
+## Layout
 
 ```
-index.html             Markup und Menü
-assets/elo.js          Elo-Logik, reine Funktionen, ohne DOM
-assets/app.js          Formulare, Menü, Ergebnisdarstellung
-assets/style.css       Styles (hell und dunkel, Handy-Breakpoint bei 640 px)
-assets/icon.svg        Icon, Quelle für die PNG-Grössen
-manifest.webmanifest   Name und Icons für den Home-Bildschirm
-sw.js                  Service Worker für den Offline-Betrieb
-build.mjs              bündelt alles in eine HTML-Datei
-tests/elo.test.mjs     Tests gegen Referenzwerte aus dem Original
-tests/fixtures/        Referenzwerte, erzeugt mit dem echten Python-Code
+index.html             markup, menu and the MathML formulas
+assets/elo.js          Elo logic, pure functions, no DOM
+assets/app.js          forms, menu, result rendering
+assets/style.css       styles (light and dark, narrow breakpoint at 40 rem)
+assets/icon.svg        icon, source for the PNG sizes
+manifest.webmanifest   name and icons for the Home Screen
+sw.js                  service worker for offline use
+build.mjs              bundles everything into one HTML file
+tests/elo.test.mjs     tests against reference values from the original
+tests/fixtures/        reference values, produced with the real Python code
 ```
 
-Keine Laufzeit-Abhängigkeiten, kein Framework. Pixi liefert nur Python für den
-lokalen Server und Node für Tests und Build.
+No runtime dependencies, no framework. Pixi only provides Python for the local
+server and Node for tests and build.
 
-## Korrektheit
+## Correctness
 
-`assets/elo.js` ist eine Portierung von `FoosballEloRankingSystem` aus
+`assets/elo.js` is a port of `FoosballEloRankingSystem` from
 `elo_slackbot/ranking/foosball_ranking_system.py`. `tests/fixtures/reference.json`
-enthält Elo-Änderungen, Endwertungen und Spielzähler, die direkt mit dieser
-Python-Klasse erzeugt wurden &ndash; über sechs Szenarien (1 v 1, 2 v 2, 1 v 2,
-Serien, Platzierungsphase). Die Tests vergleichen die JS-Portierung auf `1e-9`
-dagegen.
+holds Elo changes, final ratings and match counts generated directly with that
+Python class &ndash; across six scenarios (1 v 1, 2 v 2, 1 v 2, series, placement
+period). The tests compare the JS port against it at `1e-9`.
 
-## Wie der Bot rechnet
+## How the bot computes
 
-1. **Team-Wertung** &ndash; logarithmisches Mittel, `R = 500 · log₁₀(mittel(10^(rᵢ/500)))`.
-   Ein starker Spieler zieht die Team-Wertung über den Durchschnitt.
-2. **Erwartete Punktquote** &ndash; `E = 1 / (1 + 10^((R_B − R_A)/500))`.
-   500 Elo Differenz heisst „zehnmal so stark“, also `10/11` der Punkte.
-3. **Tatsächliche Punktquote** &ndash; `S = Punkte_A / (Punkte_A + Punkte_B)`.
-   Gewertet wird das Punktverhältnis, nicht Sieg oder Niederlage.
-4. **Rohe Änderung** &ndash; `Δ = 10 · Gesamtpunkte · (S − E)`.
-5. **Aufteilung** &ndash; `Δ / Teamgrösse` pro Spieler, Verliererteam mit umgekehrtem
-   Vorzeichen, plus `+0,5` Teilnahme-Bonus für jeden.
-6. **Platzierungsphase** &ndash; unter 5 Spielen gilt eine Wertung als unfertig. Ist
-   jemand in dieser Phase, werden die Änderungen aller *etablierten* Spieler mit
-   `min(Spiele/5)` gedämpft. Ein 2-v-2-Spiel zählt pro Spieler als halbes Spiel.
+1. **Team rating** &ndash; logarithmic mean, `R = 500 · log₁₀(mean(10^(rᵢ/500)))`.
+   One strong player pulls the team rating above the average.
+2. **Expected point share** &ndash; `E = 1 / (1 + 10^((R_B − R_A)/500))`.
+   A 500 Elo gap means "ten times as strong", so `10/11` of the points.
+3. **Actual point share** &ndash; `S = points_A / (points_A + points_B)`.
+   The point ratio counts, not win or loss.
+4. **Raw change** &ndash; `Δ = 10 · total points · (S − E)`.
+5. **Split** &ndash; `Δ / team size` per player, the losing team with the sign
+   flipped, plus a `+0.5` participation bonus for everyone.
+6. **Placement period** &ndash; below 5 matches a rating counts as provisional. If
+   anyone is in that phase, the changes of every *established* player are damped
+   by `min(matches/5)`. A 2 v 2 game counts as half a match per player.
 
-Der Platzierungsmodus ist in der UI standardmässig aus; dann gelten alle Spieler als
-etabliert. Mit der Checkbox erscheint pro Spieler ein Feld für die Anzahl Spiele.
+Placement mode is off by default in the UI; then everyone counts as established.
+The switch reveals a per-player field for the match count.
 
-## Zur Zusammenfassung mehrerer Spiele
+## On combining several games
 
-Gesucht wird das Ergebnis `(x : y)`, dessen Elo-Änderungen den Zielwerten am
-nächsten kommen; Zielwert ist die aufsummierte Änderung aller eingegebenen Spiele,
-nacheinander gewertet. Bewertet wird der RMSE über alle Spieler, der Suchraum lässt
-sich auf „Sieger hat genau N Punkte“ einschränken.
+The search looks for the score `(x : y)` whose Elo changes come closest to the
+target values; the target is the summed change of all entered games, scored one
+after another. Candidates are ranked by RMSE over all players, and the search
+space can be narrowed to "winner has exactly N points".
 
-Eine exakte Übereinstimmung ist unmöglich: Der Teilnahme-Bonus fällt pro Eintrag an,
-nicht pro gespieltem Spiel. Drei Spiele bringen jedem `3 × 0,5 = 1,5` Elo geschenkt,
-ein einzelner Eintrag nur `0,5`. Diese Differenz von `(n − 1) · 0,5` trifft alle
-Spieler gleich und lässt sich über das Ergebnis nicht ausgleichen &ndash; sie wird im
-Ergebnis separat ausgewiesen. Der sportliche Teil der Änderung wird dagegen in der
-Regel sehr genau getroffen.
+An exact match is impossible: the participation bonus is paid per entry, not per
+game played. Three games hand everyone `3 × 0.5 = 1.5` Elo for free, a single
+entry only `0.5`. That difference of `(n − 1) · 0.5` hits every player equally
+and no score can compensate for it &ndash; it is reported separately in the
+result. The competitive part of the change, on the other hand, is usually matched
+very closely.
 
-## Referenzwerte neu erzeugen
+## Regenerating the reference values
 
-`tests/fixtures/reference.json` ist eingecheckt, damit die Tests ohne Zugriff auf das
-Bot-Repository laufen. Zum Neuerzeugen braucht es eine Arbeitskopie von
-`Quantco/elo-slackbot` und eine Umgebung mit `numpy`, `pydantic` und `sqlalchemy`
-(nicht Teil dieser Pixi-Umgebung):
+`tests/fixtures/reference.json` is checked in so the tests run without access to
+the bot repository. Regenerating it needs a working copy of
+`Quantco/elo-slackbot` and an environment with `numpy`, `pydantic` and
+`sqlalchemy` (not part of this Pixi environment):
 
 ```bash
-ELO_SLACKBOT_PATH=/pfad/zu/elo-slackbot \
+ELO_SLACKBOT_PATH=/path/to/elo-slackbot \
     python tests/fixtures/generate_reference.py > tests/fixtures/reference.json
 ```

@@ -9,7 +9,7 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 
-# Build-Artefakt, siehe pixi run build
+# Build artifact, see pixi run build
 dist/
 
 # macOS

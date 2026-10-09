@@ -1,13 +1,13 @@
-// Service Worker: macht die Seite nach dem ersten Besuch offline nutzbar.
+// Service Worker: makes the page usable offline after the first visit.
 //
-// Strategie: stale-while-revalidate. Ausgeliefert wird sofort die Kopie aus dem
-// Cache, parallel wird im Hintergrund die neue Version geholt. Ein Reload nach
-// einem Deploy zeigt also noch den alten Stand, der nächste Start den neuen --
-// dafür startet die Seite immer sofort und auch ganz ohne Netz.
+// Strategy: stale-while-revalidate. The cached copy is served immediately while
+// the new version is fetched in the background. A reload right after a deploy
+// therefore still shows the old state and the next launch the new one -- in
+// exchange the page always starts instantly, even with no network at all.
 //
-// Beim Ändern von Dateien CACHE hochzählen, damit alte Einträge wegfallen.
+// Bump CACHE whenever files change so stale entries are dropped.
 
-const CACHE = "foosball-elo-v1";
+const CACHE = "foosball-elo-v2";
 
 const ASSETS = [
   "./",
@@ -58,8 +58,8 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => undefined);
 
-      // Ohne Cache-Treffer bleibt nur das Netz; schlägt auch das fehl, ist die
-      // Navigation der sinnvollste Ersatz.
+      // Without a cache hit only the network is left; if that fails too, the
+      // navigation document is the most sensible fallback.
       return cached ?? (await update) ?? cache.match("./index.html");
     }),
   );

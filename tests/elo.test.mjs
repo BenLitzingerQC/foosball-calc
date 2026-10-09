@@ -1,6 +1,6 @@
-// Vergleicht die JS-Portierung gegen Referenzwerte, die direkt mit dem
-// FoosballEloRankingSystem aus Quantco/elo-slackbot erzeugt wurden.
-// Lauf: pixi run test
+// Compares the JS port against reference values generated directly with the
+// FoosballEloRankingSystem from Quantco/elo-slackbot.
+// Run: pixi run test
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -22,7 +22,7 @@ const fixtures = JSON.parse(readFileSync(join(here, "fixtures/reference.json"), 
 
 const TOLERANCE = 1e-9;
 
-test("Referenzwerte aus dem Python-Original", () => {
+test("reference values from the Python original", () => {
   for (const [i, fixture] of fixtures.entries()) {
     const ratings = new Map(fixture.players.map(([pid, r]) => [pid, r]));
     const nGames = new Map(fixture.players.map(([pid, , n]) => [pid, n]));
@@ -41,7 +41,7 @@ test("Referenzwerte aus dem Python-Original", () => {
         team.forEach((p, k) => {
           assert.ok(
             Math.abs(deltas[k] - expected[p.id]) < TOLERANCE,
-            `Fixture ${i}, Spiel ${g}, ${p.id}: ${deltas[k]} != ${expected[p.id]}`,
+            `Fixture ${i}, game ${g}, ${p.id}: ${deltas[k]} != ${expected[p.id]}`,
           );
           ratings.set(p.id, p.rating);
           nGames.set(p.id, p.nGames);
@@ -52,41 +52,41 @@ test("Referenzwerte aus dem Python-Original", () => {
     for (const [pid, rating] of Object.entries(fixture.expected.final)) {
       assert.ok(
         Math.abs(ratings.get(pid) - rating) < TOLERANCE,
-        `Fixture ${i}, Endwertung ${pid}: ${ratings.get(pid)} != ${rating}`,
+        `Fixture ${i}, final rating ${pid}: ${ratings.get(pid)} != ${rating}`,
       );
     }
     for (const [pid, n] of Object.entries(fixture.expected.n_games)) {
       assert.ok(
         Math.abs(nGames.get(pid) - n) < TOLERANCE,
-        `Fixture ${i}, Spielzähler ${pid}: ${nGames.get(pid)} != ${n}`,
+        `Fixture ${i}, match count ${pid}: ${nGames.get(pid)} != ${n}`,
       );
     }
   }
 });
 
-test("teamRating wird vom stärkeren Spieler dominiert", () => {
-  // Logarithmisches Mittel liegt über dem arithmetischen Mittel.
+test("teamRating is dominated by the stronger player", () => {
+  // The logarithmic mean sits above the arithmetic one.
   assert.ok(teamRating([1000, 1500]) > 1250);
   assert.equal(teamRating([1100, 1100]), 1100);
 });
 
-test("Erwartungswerte sind symmetrisch und kalibriert", () => {
+test("expectations are symmetric and calibrated", () => {
   assert.ok(Math.abs(predScore([1000], [1000]) - 0.5) < 1e-12);
   const a = predScore([1200], [1000]);
   const b = predScore([1000], [1200]);
   assert.ok(Math.abs(a + b - 1) < 1e-12);
-  // 500 Elo Differenz == 10x so stark == 10/11 der Punkte erwartet
+  // a 500 Elo gap == ten times as strong == 10/11 of the points expected
   assert.ok(Math.abs(predScore([1500], [1000]) - 10 / 11) < 1e-12);
 });
 
-test("Teilnahme-Bonus: ein Unentschieden bei gleicher Elo bringt beiden +0.5", () => {
+test("participation bonus: a draw at equal Elo gives both +0.5", () => {
   const team = (n) => [{ rating: 1000, nGames: n }];
   const { deltasA, deltasB } = matchDeltas(team(20), team(20), 5, 5);
   assert.ok(Math.abs(deltasA[0] - 0.5) < 1e-12);
   assert.ok(Math.abs(deltasB[0] - 0.5) < 1e-12);
 });
 
-test("Platzierungsphase dämpft nur die etablierten Spieler", () => {
+test("the placement period only damps established players", () => {
   const established = { rating: 1000, nGames: 20 };
   const rookie = { rating: 1000, nGames: 1 }; // placementFactor = 1/5
   const { deltasA, deltasB, rawDelta, placementFactor } = matchDeltas(
@@ -100,13 +100,13 @@ test("Platzierungsphase dämpft nur die etablierten Spieler", () => {
   assert.ok(Math.abs(deltasB[0] - (0.5 - rawDelta)) < 1e-12);
 });
 
-test("Ungültige Eingaben werden abgewiesen", () => {
+test("invalid input is rejected", () => {
   const p = [{ rating: 1000, nGames: 10 }];
-  assert.throws(() => matchDeltas(p, p, 0, 0), /Gesamtpunktzahl/);
-  assert.throws(() => matchDeltas([], p, 10, 0), /mindestens einen Spieler/);
+  assert.throws(() => matchDeltas(p, p, 0, 0), /total score/);
+  assert.throws(() => matchDeltas([], p, 10, 0), /at least one player/);
 });
 
-test("findBestSingleMatch findet ein Einzelspiel exakt zurück", () => {
+test("findBestSingleMatch recovers a single game exactly", () => {
   const teamA = [
     { rating: 1050, nGames: 15 },
     { rating: 980, nGames: 22 },
@@ -115,7 +115,7 @@ test("findBestSingleMatch findet ein Einzelspiel exakt zurück", () => {
     { rating: 1010, nGames: 9 },
     { rating: 1120, nGames: 31 },
   ];
-  // Ein einzelnes Spiel als "Serie" -> die Suche muss genau dieses Ergebnis finden.
+  // A single game as a "series" -> the search has to find exactly that score.
   const series = simulateSeries(teamA, teamB, [{ scoreA: 10, scoreB: 7 }]);
   const [best] = findBestSingleMatch(teamA, teamB, series.cumulativeA, series.cumulativeB, {
     maxPoints: 10,
@@ -126,7 +126,7 @@ test("findBestSingleMatch findet ein Einzelspiel exakt zurück", () => {
   assert.ok(best.rmse < 1e-12);
 });
 
-test("findBestSingleMatch respektiert den Suchraum", () => {
+test("findBestSingleMatch respects the search space", () => {
   const team = [{ rating: 1000, nGames: 10 }];
   const other = [{ rating: 1000, nGames: 10 }];
   const target = [0];
@@ -143,13 +143,13 @@ test("findBestSingleMatch respektiert den Suchraum", () => {
     mode: "any",
     topN: 999,
   });
-  // 11*11 Paare minus (0,0)
+  // 11*11 pairs minus (0,0)
   assert.equal(any.length, 120);
-  // Bei identischer Elo ist das Unentschieden die beste Annäherung an 0.
+  // At identical Elo the draw is the closest approximation to 0.
   assert.equal(any[0].scoreA, any[0].scoreB);
 });
 
-test("Serie: Summe der Einzeldeltas == kumulierte Änderung", () => {
+test("series: sum of the single deltas == cumulative change", () => {
   const teamA = [
     { rating: 1200, nGames: 3 },
     { rating: 900, nGames: 40 },
@@ -169,6 +169,6 @@ test("Serie: Summe der Einzeldeltas == kumulierte Änderung", () => {
     const summed = series.perGame.reduce((s, step) => s + step.deltasA[i], 0);
     assert.ok(Math.abs(summed - series.cumulativeA[i]) < 1e-9);
   });
-  // Spielzähler: drei 2v2-Spiele -> +1.5 pro Spieler
+  // Match counts: three 2v2 games -> +1.5 per player
   assert.ok(Math.abs(series.finalA[0].nGames - (3 + 1.5)) < 1e-12);
 });

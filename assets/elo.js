@@ -1,24 +1,24 @@
-// Portierung der Elo-Logik aus Quantco/elo-slackbot
+// Port of the Elo logic from Quantco/elo-slackbot
 // (elo_slackbot/ranking/foosball_ranking_system.py, FoosballEloRankingSystem).
-// Reine Funktionen, keine DOM-Abhängigkeit -- damit auch unter node testbar.
+// Pure functions, no DOM dependency -- so it is testable under node too.
 
-/** Konstanten aus foosball_ranking_system.py. */
+/** Constants from foosball_ranking_system.py. */
 export const DEFAULT_CONFIG = Object.freeze({
-  // FREE_ELO_GAIN -- Teilnahme-Bonus, den jeder Spieler pro Spiel geschenkt bekommt
+  // FREE_ELO_GAIN -- participation bonus every player collects per match
   freeRatingGain: 0.5,
-  // ELO_GAIN_COEF -- globaler Multiplikator der Rating-Änderung
+  // ELO_GAIN_COEF -- global multiplier of the rating change
   ratingGainCoef: 10,
-  // INITIAL_ELO -- Startwertung neuer Spieler
+  // INITIAL_ELO -- starting rating of a new player
   initialRating: 1000,
-  // PLACEMENT_MATCHES -- Spiele bis die Wertung als stabil gilt
+  // PLACEMENT_MATCHES -- matches until a rating counts as stable
   placementMatches: 5,
-  // EXPONENT_ELO_DIFF -- diese Elo-Differenz bedeutet "10x so stark"
+  // EXPONENT_ELO_DIFF -- this rating gap means "10x as strong"
   exponentEloDiff: 500,
 });
 
 /**
- * Reduzierte Wertung eines Teams: logarithmisches Mittel, dominiert vom
- * stärksten Spieler.
+ * Reduced rating of a team: a logarithmic mean, dominated by the strongest
+ * player.
  */
 export function teamRating(ratings, cfg = DEFAULT_CONFIG) {
   const d = cfg.exponentEloDiff;
@@ -26,33 +26,33 @@ export function teamRating(ratings, cfg = DEFAULT_CONFIG) {
   return d * Math.log10(mean);
 }
 
-/** Sigmoid zur Umrechnung einer Rating-Differenz in eine erwartete Punktquote. */
+/** Sigmoid turning a rating gap into an expected point share. */
 export function scoreSigmoid(x, cfg = DEFAULT_CONFIG) {
   return 1 / (1 + 10 ** (x / cfg.exponentEloDiff));
 }
 
-/** Erwartete Punktquote von Team A gegen Team B. */
+/** Expected point share of team A against team B. */
 export function predScore(ratingsA, ratingsB, cfg = DEFAULT_CONFIG) {
   return scoreSigmoid(teamRating(ratingsB, cfg) - teamRating(ratingsA, cfg), cfg);
 }
 
 /**
- * Elo-Änderung aller Beteiligten für ein einzelnes Spiel.
+ * Elo change for everyone involved in a single match.
  *
- * Teams sind Arrays von `{ rating, nGames }`. Gibt die Deltas sowie die
- * Zwischengrössen zurück, die die UI anzeigt.
+ * Teams are arrays of `{ rating, nGames }`. Returns the deltas plus the
+ * intermediate values the UI displays.
  */
 export function matchDeltas(teamA, teamB, scoreA, scoreB, cfg = DEFAULT_CONFIG) {
   if (teamA.length === 0 || teamB.length === 0) {
-    throw new Error("Beide Teams brauchen mindestens einen Spieler.");
+    throw new Error("Both teams need at least one player.");
   }
   const totalPoints = scoreA + scoreB;
   if (!(totalPoints > 0)) {
-    throw new Error("Die Gesamtpunktzahl muss grösser als 0 sein.");
+    throw new Error("The total score has to be greater than 0.");
   }
 
-  // Spielt jemand noch Platzierungsspiele, werden die Deltas aller etablierten
-  // Spieler gedämpft (gegen Elo-Farming an Neulingen).
+  // While anyone is still playing placement matches, the deltas of every
+  // established player are damped (against Elo farming off newcomers).
   let placementFactor = 1;
   for (const p of [...teamA, ...teamB]) {
     if (p.nGames < cfg.placementMatches) {
@@ -87,14 +87,14 @@ export function matchDeltas(teamA, teamB, scoreA, scoreB, cfg = DEFAULT_CONFIG) 
   };
 }
 
-/** Wendet ein Spiel an und gibt die neuen Teamzustände zurück (nicht mutierend). */
+/** Applies a match and returns the new team states (non-mutating). */
 export function applyMatch(teamA, teamB, scoreA, scoreB, cfg = DEFAULT_CONFIG) {
   const result = matchDeltas(teamA, teamB, scoreA, scoreB, cfg);
   const advance = (team, deltas) =>
     team.map((p, i) => ({
       ...p,
       rating: p.rating + deltas[i],
-      // update_n_games(team_weight) -- ein Spiel zählt 1/Teamgrösse
+      // update_n_games(team_weight) -- one match counts as 1/team size
       nGames: p.nGames + 1 / team.length,
     }));
   return {
@@ -105,10 +105,10 @@ export function applyMatch(teamA, teamB, scoreA, scoreB, cfg = DEFAULT_CONFIG) {
 }
 
 /**
- * Spielt eine Serie `games = [{ scoreA, scoreB }, ...]` nacheinander durch.
+ * Plays a series `games = [{ scoreA, scoreB }, ...]` one after another.
  *
- * Die Reihenfolge ist relevant: Wertungen und Spielzähler wandern von Spiel zu
- * Spiel weiter, genau wie der Bot es täte.
+ * Order matters: ratings and match counts carry over from game to game,
+ * exactly as the bot would do it.
  */
 export function simulateSeries(teamA, teamB, games, cfg = DEFAULT_CONFIG) {
   let currentA = teamA;
@@ -131,7 +131,7 @@ export function simulateSeries(teamA, teamB, games, cfg = DEFAULT_CONFIG) {
   };
 }
 
-/** Kandidaten-Ergebnisse (x, y) für die Suche. */
+/** Candidate scores (x, y) for the search. */
 function* candidateScores({ maxPoints, mode }) {
   for (let x = 0; x <= maxPoints; x++) {
     for (let y = 0; y <= maxPoints; y++) {
@@ -146,13 +146,13 @@ function* candidateScores({ maxPoints, mode }) {
 }
 
 /**
- * Sucht das Einzelergebnis, dessen Deltas den Zielwerten am nächsten kommen.
+ * Searches the single score whose deltas come closest to the target values.
  *
- * `targetA` / `targetB` sind die gewünschten Elo-Änderungen pro Spieler --
- * typischerweise die Summe aus `simulateSeries`. Bewertet wird der RMSE über
- * alle Spieler; `mode` schränkt den Suchraum ein:
- *   "any"         -- alle Ergebnisse 0..maxPoints
- *   "winnerExact" -- Sieger hat genau maxPoints Punkte
+ * `targetA` / `targetB` are the wanted Elo changes per player -- typically the
+ * sum from `simulateSeries`. Candidates are ranked by RMSE over all players;
+ * `mode` narrows the search space:
+ *   "any"         -- every score from 0..maxPoints
+ *   "winnerExact" -- the winner has exactly maxPoints points
  */
 export function findBestSingleMatch(
   teamA,
@@ -177,7 +177,7 @@ export function findBestSingleMatch(
   }
 
   if (candidates.length === 0) {
-    throw new Error("Kein Ergebnis im gewählten Suchraum.");
+    throw new Error("No score inside the chosen search space.");
   }
 
   candidates.sort((a, b) => a.rmse - b.rmse || a.scoreA + a.scoreB - (b.scoreA + b.scoreB));
