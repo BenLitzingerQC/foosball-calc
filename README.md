@@ -1,5 +1,7 @@
 # Foosball Elo Rechner
 
+**→ [benlitzingerqc.github.io/foosball-calc](https://benlitzingerqc.github.io/foosball-calc/)**
+
 Statische Seite zum Nachrechnen der Elo-Wertung des Tischkicker-Slackbots
 ([`Quantco/elo-slackbot`](https://github.com/Quantco/elo-slackbot)), gesteuert über
 ein Menü mit drei Ansichten:
