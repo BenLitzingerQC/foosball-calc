@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Foosball Elo Rechner</title>
+    <meta name="description" content="Elo-Rechner für den Tischkicker-Slackbot." />
+
+    <!-- Zum Home-Bildschirm hinzufügen -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Elo" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#f7f7f8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1f1f23" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/icon-180.png" />
+
+    <link rel="stylesheet" href="assets/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>Foosball Elo Rechner</h1>
+      <nav id="menu">
+        <button type="button" data-view="simulate" class="active">
+          <span class="long">Spiel simulieren</span><span class="short">Simulieren</span>
+        </button>
+        <button type="button" data-view="combine">
+          <span class="long">Spiele zusammenfassen</span><span class="short">Zusammenfassen</span>
+        </button>
+        <button type="button" data-view="formula">
+          <span class="long">Formel</span><span class="short">Formel</span>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- ---------------------------------------------------------------- -->
+      <section id="view-simulate" class="view">
+        <p class="lead">
+          Aktuelle Elo der Spieler und ein Ergebnis eintragen &ndash; heraus kommt, wie
+          viel Elo der Bot jedem gutschreiben würde.
+        </p>
+
+        <form id="form-simulate">
+          <div class="teams">
+            <div class="team-editor" data-team="a"></div>
+            <div class="team-editor" data-team="b"></div>
+          </div>
+
+          <div class="row score-row">
+            <label>
+              Punkte Team&nbsp;A
+              <input type="number" id="sim-score-a" min="0" step="1" value="10" required />
+            </label>
+            <span class="colon">:</span>
+            <label>
+              Punkte Team&nbsp;B
+              <input type="number" id="sim-score-b" min="0" step="1" value="7" required />
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="check">
+              <input type="checkbox" id="sim-placement" />
+              Platzierungsspiele berücksichtigen
+            </label>
+          </div>
+
+          <button type="submit" class="primary">Berechnen</button>
+        </form>
+
+        <div id="out-simulate" class="output" aria-live="polite"></div>
+      </section>
+
+      <!-- ---------------------------------------------------------------- -->
+      <section id="view-combine" class="view" hidden>
+        <p class="lead">
+          Mehrere gespielte Spiele, aber nur ein Eintrag im Bot: Hier wird das
+          Einzelergebnis gesucht, dessen Elo-Änderung der Summe aller Spiele am
+          nächsten kommt.
+        </p>
+
+        <form id="form-combine">
+          <div class="teams">
+            <div class="team-editor" data-team="a"></div>
+            <div class="team-editor" data-team="b"></div>
+          </div>
+
+          <fieldset>
+            <legend>Gespielte Spiele</legend>
+            <p class="hint">
+              In dieser Reihenfolge gewertet &ndash; Elo und Spielzähler wandern von
+              Spiel zu Spiel weiter.
+            </p>
+            <div id="game-list"></div>
+            <button type="button" class="ghost" id="add-game">+ Spiel</button>
+          </fieldset>
+
+          <fieldset>
+            <legend>Suchraum</legend>
+            <div class="row">
+              <label>
+                Punkte bis
+                <input type="number" id="cmb-max-points" min="1" step="1" value="10" required />
+              </label>
+              <label class="wide">
+                Ergebnisse
+                <select id="cmb-mode">
+                  <option value="winnerExact" selected>Sieger hat genau diese Punktzahl</option>
+                  <option value="any">Alle Ergebnisse bis zu dieser Punktzahl</option>
+                </select>
+              </label>
+              <label class="check">
+                <input type="checkbox" id="cmb-placement" />
+                Platzierungsspiele berücksichtigen
+              </label>
+            </div>
+          </fieldset>
+
+          <button type="submit" class="primary">Bestes Einzelergebnis suchen</button>
+        </form>
+
+        <div id="out-combine" class="output" aria-live="polite"></div>
+      </section>
+
+      <!-- ---------------------------------------------------------------- -->
+      <section id="view-formula" class="view" hidden>
+        <p class="lead">
+          Nachbau von <code>FoosballEloRankingSystem</code> aus
+          <code>Quantco/elo-slackbot</code>. Die Zahlen hier stimmen bis auf
+          Gleitkomma-Genauigkeit mit dem Bot überein.
+        </p>
+
+        <h2>Rechenweg</h2>
+        <ol class="formula">
+          <li>
+            <strong>Team-Wertung.</strong> Logarithmisches Mittel der Einzelwertungen,
+            <code>R = D · log₁₀( mittel( 10^(rᵢ/D) ) )</code> mit <code>D = 500</code>.
+            Ein starker Spieler zieht die Team-Wertung also über den Durchschnitt.
+          </li>
+          <li>
+            <strong>Erwartete Punktquote.</strong>
+            <code>E = 1 / (1 + 10^((R_B − R_A)/D))</code>. 500&nbsp;Elo Differenz
+            heisst &bdquo;zehnmal so stark&ldquo; und damit <code>10/11</code> der Punkte.
+          </li>
+          <li>
+            <strong>Tatsächliche Punktquote.</strong>
+            <code>S = Punkte_A / (Punkte_A + Punkte_B)</code> &ndash; nicht Sieg/Niederlage,
+            sondern das Punktverhältnis. 10:9 verschiebt wenig, 10:0 viel.
+          </li>
+          <li>
+            <strong>Rohe Änderung.</strong>
+            <code>Δ = 10 · (Punkte_A + Punkte_B) · (S − E)</code>. Mehr Gesamtpunkte
+            &rarr; grösserer Hebel.
+          </li>
+          <li>
+            <strong>Aufteilung.</strong> Jeder Spieler bekommt <code>Δ / Teamgrösse</code>,
+            das Verliererteam mit umgekehrtem Vorzeichen, plus <code>+0,5</code>
+            Teilnahme-Bonus für jeden.
+          </li>
+          <li>
+            <strong>Platzierungsphase.</strong> Unter 5&nbsp;Spielen ist eine Wertung
+            unfertig. Ist jemand in dieser Phase, werden die Änderungen aller
+            <em>etablierten</em> Spieler mit <code>min(Spiele/5)</code> gedämpft &ndash;
+            gegen Elo-Farming an Neulingen. Ein 2&#8239;v&#8239;2-Spiel zählt pro Spieler
+            als halbes Spiel.
+          </li>
+        </ol>
+
+        <h2>Konstanten</h2>
+        <div class="table-wrap">
+          <table class="result" id="constants-table"></table>
+        </div>
+
+        <h2>Warum die Zusammenfassung nie exakt passt</h2>
+        <p>
+          Der Teilnahme-Bonus fällt pro Eintrag an, nicht pro gespieltem Spiel. Drei
+          Spiele bringen jedem <code>3 × 0,5 = 1,5</code> Elo geschenkt, ein einzelner
+          Eintrag nur <code>0,5</code>. Diese Differenz von <code>(n − 1) · 0,5</code>
+          trifft alle Spieler gleich und lässt sich über das Ergebnis nicht ausgleichen
+          &ndash; sie wird im Ergebnis separat ausgewiesen.
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="assets/app.js"></script>
+  </body>
+</html>

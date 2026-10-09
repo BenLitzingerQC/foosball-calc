@@ -1,0 +1,14 @@
+[workspace]
+channels = ["conda-forge"]
+name = "foosball_calc"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+serve = "python -m http.server 8000"
+test = "node --test tests/"
+build = "node build.mjs"
+
+[dependencies]
+python = ">=3.14.8,<3.15"
+nodejs = ">=26.10.0,<26.11"

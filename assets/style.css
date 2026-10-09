@@ -1,0 +1,591 @@
+:root {
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --border: #dcdce0;
+  --text: #1c1c20;
+  --muted: #65656e;
+  --accent: #2f6f4f;
+  --accent-text: #ffffff;
+  --gain: #1c6b45;
+  --loss: #a43232;
+  --radius: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17171a;
+    --surface: #1f1f23;
+    --border: #35353c;
+    --text: #e8e8ea;
+    --muted: #9a9aa4;
+    --accent: #4b9e74;
+    --accent-text: #0e1a13;
+    --gain: #6cc495;
+    --loss: #e08585;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  /* Verhindert, dass iOS im Querformat die Schrift aufbläst. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  /* 16px ist Pflicht: darunter zoomt iOS Safari beim Fokussieren von Feldern. */
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* -------------------------------------------------- Menü */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+#menu {
+  display: flex;
+  gap: 0.25rem;
+}
+
+#menu button {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+/* Kurze Menütitel erst ab Handybreite, siehe Media Query unten. */
+#menu .short {
+  display: none;
+}
+
+#menu button:hover {
+  color: var(--text);
+  border-color: var(--border);
+}
+
+#menu button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* -------------------------------------------------- Layout */
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.lead {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  max-width: 62ch;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 2rem 0 0.75rem;
+}
+
+fieldset {
+  margin: 0 0 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+legend {
+  padding: 0 0.4rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+input,
+select {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+input[type="number"] {
+  width: 6.5rem;
+}
+
+input[type="checkbox"] {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+button.primary {
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.ghost {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+button.ghost:hover {
+  color: var(--text);
+}
+
+/* -------------------------------------------------- Teams */
+
+.teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.team-editor {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  /* Ohne das setzt das Namensfeld eine Mindestbreite von ~190px auf die
+     Grid-Spalte durch und die Seite läuft auf schmalen Handys seitlich über. */
+  min-width: 0;
+}
+
+.team-editor h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.player-row {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.player-row .p-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.player-row .p-elo,
+.player-row .p-games {
+  flex: 0 0 5.5rem;
+  width: 5.5rem;
+}
+
+.column-head {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.column-head span:first-child {
+  flex: 1 1 auto;
+}
+
+.column-head span.num {
+  flex: 0 0 5.5rem;
+}
+
+.column-head span.spacer {
+  flex: 0 0 1.9rem;
+}
+
+.score-row {
+  align-items: flex-end;
+}
+
+.score-row .colon {
+  padding-bottom: 0.45rem;
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+/* Ergebniszeilen der Serie: kein Label über den Feldern, also mittig ausrichten. */
+#game-list .score-row {
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#game-list .colon {
+  padding-bottom: 0;
+}
+
+.game-label {
+  flex: 0 0 5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* -------------------------------------------------- Ergebnis */
+
+.output {
+  margin-top: 1.5rem;
+}
+
+.output:empty {
+  margin-top: 0;
+}
+
+.panel {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: 1rem;
+}
+
+.panel h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem
+}
+
+.headline {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.headline .sub {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* Breite Tabellen scrollen am Handy seitlich, statt das Layout zu sprengen. */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table.result {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+table.result th,
+table.result td {
+  padding: 0.35rem 0.5rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+
+table.result th:first-child,
+table.result td:first-child {
+  text-align: left;
+}
+
+table.result thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+table.result tbody tr:last-child td {
+  border-bottom: none;
+}
+
+table.result tr.separator td {
+  border-top: 2px solid var(--border);
+}
+
+td.gain,
+span.gain {
+  color: var(--gain);
+}
+
+td.loss,
+span.loss {
+  color: var(--loss);
+}
+
+dl.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 1rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+dl.facts dt {
+  color: var(--muted);
+}
+
+dl.facts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--loss);
+  border-radius: var(--radius);
+  color: var(--loss);
+  background: var(--surface);
+}
+
+code {
+  padding: 0.05em 0.3em;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  font-size: 0.9em;
+}
+
+ol.formula {
+  padding-left: 1.3rem;
+  max-width: 70ch;
+}
+
+ol.formula li {
+  margin-bottom: 0.6rem;
+}
+
+.note {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  max-width: 70ch;
+}
+
+/* -------------------------------------------------- Handy */
+
+@media (max-width: 640px) {
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    gap: 0.6rem;
+    padding: 0.7rem max(0.85rem, env(safe-area-inset-left));
+  }
+
+  .topbar h1 {
+    flex: 1 0 100%;
+  }
+
+  #menu {
+    flex: 1 0 100%;
+    gap: 0.3rem;
+  }
+
+  #menu button {
+    flex: 1 1 auto;
+    min-height: 2.5rem;
+    padding: 0.35rem 0.4rem;
+    border-color: var(--border);
+    font-size: 0.9rem;
+  }
+
+  #menu .long {
+    display: none;
+  }
+
+  #menu .short {
+    display: inline;
+  }
+
+  main {
+    padding: 1rem max(0.85rem, env(safe-area-inset-left))
+      calc(2rem + env(safe-area-inset-bottom));
+  }
+
+  .lead {
+    margin-bottom: 1rem;
+  }
+
+  /* Teams untereinander statt nebeneinander. */
+  .teams {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .team-editor,
+  fieldset,
+  .panel {
+    padding: 0.85rem;
+  }
+
+  .row {
+    gap: 0.6rem 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Felder dürfen nie breiter werden als ihr Container -- sonst schiebt ein
+     langer Auswahltext die ganze Seite nach rechts. */
+  label,
+  .row > label.wide {
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .row > label:not(.wide) {
+    flex: 0 1 auto;
+  }
+
+  select {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Durchgängig daumentaugliche Trefferflächen. */
+  input,
+  select,
+  button.ghost,
+  button.primary {
+    min-height: 2.75rem;
+  }
+
+  button.primary {
+    width: 100%;
+    font-size: 1rem;
+  }
+
+  input[type="checkbox"] {
+    min-height: 0;
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  input[type="number"] {
+    width: 4.75rem;
+  }
+
+  .player-row {
+    gap: 0.35rem;
+  }
+
+  .player-row .p-elo,
+  .player-row .p-games {
+    flex: 0 0 4.75rem;
+    width: 4.75rem;
+  }
+
+  .player-row .remove,
+  #game-list .remove {
+    flex: 0 0 2.5rem;
+    padding: 0.3rem;
+  }
+
+  .column-head span.num {
+    flex: 0 0 4.75rem;
+  }
+
+  .column-head span.spacer {
+    flex: 0 0 2.5rem;
+  }
+
+  #game-list .score-row {
+    gap: 0.35rem;
+  }
+
+  .game-label {
+    flex: 0 0 3.6rem;
+  }
+
+  .headline {
+    font-size: 1.4rem;
+  }
+
+  /* Spalten, die am Handy entfallen, damit die Kernzahlen ohne seitliches
+     Scrollen sichtbar bleiben. */
+  .hide-sm {
+    display: none;
+  }
+
+  table.result th,
+  table.result td {
+    padding: 0.4rem 0.45rem;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  table.result thead th {
+    font-size: 0.7rem;
+  }
+
+  dl.facts {
+    grid-template-columns: 1fr auto;
+  }
+
+  dl.facts dd {
+    text-align: right;
+  }
+}

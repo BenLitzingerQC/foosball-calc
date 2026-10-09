@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tischkicker von oben. Vollflächig quadratisch: iOS und Android legen beim
+     Hinzufügen zum Home-Bildschirm ihre eigene Maske darüber. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="Tischkicker-Spielfeld von oben">
+  <rect width="512" height="512" fill="#2f6f4f" />
+  <g fill="none" stroke="#ffffff" stroke-width="15" stroke-linejoin="round" opacity="0.92">
+    <rect x="92" y="52" width="328" height="408" rx="16" />
+    <path d="M92 256h328" />
+    <circle cx="256" cy="256" r="58" />
+    <rect x="194" y="52" width="124" height="50" />
+    <rect x="194" y="410" width="124" height="50" />
+  </g>
+  <circle cx="314" cy="168" r="25" fill="#ffffff" />
+</svg>
